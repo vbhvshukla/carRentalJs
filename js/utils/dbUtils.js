@@ -1,72 +1,74 @@
-import { openDb, getObjectStore } from '../data/dbService.js';
+import { openDb, getObjectStore } from "../data/dbService.js";
 
-function addItem(storeName, item) {
-    return new Promise((resolve, reject) => {
-        openDb().then(() => {
-            const store = getObjectStore(storeName, "readwrite");
+async function addItem(storeName, item) {
+    try {
+        await openDb();
+        const store = getObjectStore(storeName, "readwrite");
+        return new Promise((resolve, reject) => {
             const request = store.add(item);
-            request.onsuccess = function () {
-                resolve(item);
-            };
-            request.onerror = function (event) {
-                reject(event.target.error);
-            };
-        }).catch((error) => {
-            reject(error);
+            request.onsuccess = () => resolve(item);
+            request.onerror = (event) => reject(new Error(`Add failed: ${event.target.error}`));
         });
-    });
+    } catch (error) {
+        return Promise.reject(new Error(`Database error: ${error.message}`));
+    }
 }
 
-function getItemByIndex(storeName, indexName, key) {
-    return new Promise((resolve, reject) => {
-        openDb().then(() => {
-            const store = getObjectStore(storeName, "readonly");
-            const index = store.index(indexName);
+async function getItemByIndex(storeName, indexName, key) {
+    try {
+        await openDb();
+        const store = getObjectStore(storeName, "readonly");
+        const index = store.index(indexName);
+        return new Promise((resolve, reject) => {
             const request = index.get(key);
-            request.onsuccess = function () {
-                resolve(request.result);
-            };
-            request.onerror = function (event) {
-                reject(event.target.error);
-            };
-        }).catch((error) => {
-            reject(error);
+            request.onsuccess = () => resolve(request.result || null);
+            request.onerror = (event) => reject(new Error(`Fetch failed: ${event.target.error}`));
         });
-    });
+    } catch (error) {
+        return Promise.reject(new Error(`Database error: ${error.message}`));
+    }
 }
 
-function getAllItems(storeName) {
-    return new Promise((resolve, reject) => {
-        openDb().then(() => {
-            const store = getObjectStore(storeName, "readonly");
+async function getAllItems(storeName) {
+    try {
+        await openDb();
+        const store = getObjectStore(storeName, "readonly");
+        return new Promise((resolve, reject) => {
             const request = store.getAll();
-            request.onsuccess = function () {
-                resolve(request.result);
-            };
-            request.onerror = function (event) {
-                reject(event.target.error);
-            };
-        }).catch((error) => {
-            reject(error);
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = (event) => reject(new Error(`Fetch failed: ${event.target.error}`));
         });
-    });
+    } catch (error) {
+        return Promise.reject(new Error(`Database error: ${error.message}`));
+    }
 }
 
-function updateItem(storeName, item) {
-    return new Promise((resolve, reject) => {
-        openDb().then(() => {
-            const store = getObjectStore(storeName, "readwrite");
+async function updateItem(storeName, item) {
+    try {
+        await openDb();
+        const store = getObjectStore(storeName, "readwrite");
+        return new Promise((resolve, reject) => {
             const request = store.put(item);
-            request.onsuccess = function () {
-                resolve(item);
-            };
-            request.onerror = function (event) {
-                reject(event.target.error);
-            };
-        }).catch((error) => {
-            reject(error);
+            request.onsuccess = () => resolve(item);
+            request.onerror = (event) => reject(new Error(`Update failed: ${event.target.error}`));
         });
-    });
+    } catch (error) {
+        return Promise.reject(new Error(`Database error: ${error.message}`));
+    }
 }
 
-export { addItem, getItemByIndex, getAllItems, updateItem };
+async function deleteItem(storeName, key) {
+    try {
+        await openDb();
+        const store = getObjectStore(storeName, "readwrite");
+        return new Promise((resolve, reject) => {
+            const request = store.delete(key);
+            request.onsuccess = () => resolve(true);
+            request.onerror = (event) => reject(new Error(`Delete failed: ${event.target.error}`));
+        });
+    } catch (error) {
+        return Promise.reject(new Error(`Database error: ${error.message}`));
+    }
+}
+
+export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem };

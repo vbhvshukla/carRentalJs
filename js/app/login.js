@@ -1,11 +1,45 @@
-import { getItem } from "../utils/dbUtils";
+import { getCookie, setCookie } from "../utils/cookie.js";
+import { getItemByIndex } from "../utils/dbUtils.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById("loginForm");
-    registerForm.addEventListener('submit', (event) => {
+    loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const email = document.getElementById("email");
-        const password = document.getElementById("password");
-        
+        const errorMessage = document.getElementById('error-message');
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const role = document.querySelector('input[name="role"]:checked')?.value;
+        if (!email || !password || !role) {
+            errorMessage.textContent = 'All fields are required!';
+            return;
+        }
+
+        const user = await getItemByIndex("users", "email", email);
+        if (!user) {
+            errorMessage.textContent = "Email does not exist. Please register to continue!";
+            return;
+        }
+        const hashedPassword = CryptoJS.SHA256(password).toString();
+        if (role === "owner" && user.role !== role) {
+            errorMessage.textContent = "You are not an owner! Please select user to continue";
+            return;
+        }
+        if (!hashedPassword === user.password) {
+            errorMessage.textContent = "Invalid Password"
+            return;
+        }
+        setCookie("username", user.username, 1);
+        setCookie("email", user.email, 1);
+        setCookie("role", user.role, 1);
+
+        if (role === "owner") {
+            window.location.href = "./owner/dashboard";
+        }
+        else if (role === "admin") {
+            window.location.href = "./admin/dashboard";
+        }
+        else {
+            window.location.href = "./index.html"
+        }
     })
 })
