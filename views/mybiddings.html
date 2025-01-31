@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bidding History</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #0d7963;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header .logo img {
+            height: 60px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .bidding-history {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .bidding-history h2 {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .bidding-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .bidding-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .bidding-item:last-child {
+            border-bottom: none;
+        }
+
+        .footer {
+            text-align: center;
+            background-color: #0d7963;
+            color: #fff;
+            padding: 15px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .status-pending {
+            color: orange;
+        }
+
+        .status-approved {
+            color: green;
+        }
+
+        .status-rejected {
+            color: red;
+        }
+
+        @media (max-width: 768px) {
+            .bidding-history {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <header class="header">
+            <div class="logo">
+                <img src="../assets/images/logo.png" alt="Logo">
+            </div>
+            <nav class="nav-links">
+                <a href="/">Home</a>
+                <a href="#">About Us</a>
+                <a href="#">Contact Us</a>
+                <a href="/views/login.html">Login</a>
+            </nav>
+        </header>
+
+        <div class="bidding-history">
+            <h2>My Bidding History</h2>
+            <ul id="bidding-list" class="bidding-list"></ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        Footer
+    </div>
+
+    <script type="module">
+        import { getAllItems } from "../js/utils/dbUtils.js";
+        import { getCookie } from "../js/utils/cookie.js";
+
+        async function loadBiddingHistory() {
+            const userId = getCookie("userId");
+            if (!userId) {
+                alert("You need to log in to view your bidding history.");
+                window.location.href = "/views/login.html";
+                return;
+            }
+
+            try {
+                const bids = await getAllItems("bids");
+                const userBids = bids.filter(bid => bid.userId === userId);
+                
+                const biddingList = document.getElementById("bidding-list");
+                biddingList.innerHTML = "";
+
+                if (userBids.length === 0) {
+                    biddingList.innerHTML = "<p>No bids placed yet.</p>";
+                    return;
+                }
+
+                userBids.forEach(bid => {
+                    const bidItem = document.createElement("li");
+                    bidItem.classList.add("bidding-item");
+
+                    let statusClass = "";
+                    if (bid.status === "Pending") statusClass = "status-pending";
+                    else if (bid.status === "Approved") statusClass = "status-approved";
+                    else if (bid.status === "Rejected") statusClass = "status-rejected";
+
+                    bidItem.innerHTML = `
+                        <p><strong>Car:</strong> ${bid.carName}</p>
+                        <p><strong>Bid Amount:</strong> $${bid.bidAmount} / day</p>
+                        <p><strong>Date Range:</strong> ${bid.from} to ${bid.to}</p>
+                        <p><strong>Status:</strong> <span class="${statusClass}">${bid.status}</span></p>
+                    `;
+
+                    biddingList.appendChild(bidItem);
+                });
+
+            } catch (error) {
+                console.error("Error loading bidding history:", error);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", loadBiddingHistory);
+    </script>
+</body>
+</html>

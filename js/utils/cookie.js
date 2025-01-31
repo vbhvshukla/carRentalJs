@@ -4,12 +4,15 @@ function setCookie(name,value,days){
     document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
 }
 
-function getCookie(name){
-    const cookies = document.cookie.split(';');
-    for(const cookie of cookies){
-        const [key,value] = cookie.split('=');
-        if(key === name) return value;
+function getCookie(name) {
+    const cookies = document.cookie.split("; ");
+    for (let i = 0; i < cookies.length; i++) {
+        const [key, value] = cookies[i].split("=");
+        if (key === name) {
+            return decodeURIComponent(value);
+        }
     }
     return null;
 }
+
 export {getCookie,setCookie};

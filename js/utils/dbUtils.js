@@ -29,6 +29,23 @@ async function getItemByIndex(storeName, indexName, key) {
     }
 }
 
+async function getItemByKey(storeName, key) {
+    try {
+        await openDb();
+        const store = getObjectStore(storeName, "readonly");
+        return new Promise((resolve, reject) => {
+            const request = store.get(key);
+            request.onsuccess = function (e) {
+                resolve(request.result);
+            }
+            request.onerror = (event) => reject(new Error(`Fetch failed: ${event.target.error}`))
+        })
+    }
+    catch (err) {
+        return Promise.reject(new Error(`Data error : ${err.message}`))
+    }
+}
+
 async function getAllItems(storeName) {
     try {
         await openDb();
@@ -71,4 +88,4 @@ async function deleteItem(storeName, key) {
     }
 }
 
-export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem };
+export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem ,getItemByKey};
