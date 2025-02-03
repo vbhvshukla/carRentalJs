@@ -27,6 +27,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: -20px;
         }
 
         .header .logo img {
@@ -69,8 +70,13 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            flex: 0 0 35%;
-            margin-left: 20px;
+            flex: 0 0 30%;
+            /* margin-left: 0px; */
+        }
+
+        .bid-amount {
+            margin-top: 10px;
+            padding: 20px;
         }
 
         .footer {
@@ -78,9 +84,9 @@
             background-color: #0d7963;
             color: #fff;
             padding: 15px;
-            position: fixed;
+            /* position: fixed; */
             bottom: 0;
-            width: 100%;
+            width: 97.5%;
         }
 
         button {
@@ -100,13 +106,14 @@
         input[type="date"],
         input[type="number"] {
             padding: 10px;
-            width: 100%;
+            width: 95%;
             margin: 5px 0;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
 
         .price-info {
+            padding-top: 10px;
             font-size: 18px;
             margin-bottom: 10px;
         }
@@ -140,7 +147,8 @@
                 <a href="/">Home</a>
                 <a href="#">About Us</a>
                 <a href="#">Contact Us</a>
-                <a href="/views/login.html">Login</a>
+                <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a>
+                <a href="#" id="logout-link">Logout</a>
             </nav>
         </header>
 
@@ -180,10 +188,10 @@
         import { getItemByKey, getAllItems, addItem } from "../js/utils/dbUtils.js";
         import { generateRandomId } from "../js/utils/generateId.js";
         import { getCookie } from "../js/utils/cookie.js";
-
+        import { checkAuth,logout } from "../js/utils/auth.js";
         const userId = getCookie("userId");
         const username = getCookie("username");
-
+        if(!userId) window.location.href="./index.html";
         function getCarIdFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('carId');
@@ -193,14 +201,14 @@
             const carId = getCarIdFromURL();
             if (!carId) {
                 alert("Car not found.");
-                return;
+                window.location.href = "./index.html";
             }
 
             try {
                 const car = await getItemByKey("cars", carId);
                 if (!car) {
                     alert("Car not found in the database.");
-                    return;
+                    window.location.href = "./index.html";
                 }
 
                 const carImagesContainer = document.getElementById("car-images");
@@ -246,7 +254,6 @@
                     });
 
                     const highestBid = validBids.reduce((max, bid) => bid.bidAmount > max ? bid.bidAmount : max, car.basePrice);
-
                     if (bidAmount >= highestBid) {
                         const newBid = {
                             bidId: generateRandomId(),
@@ -258,14 +265,15 @@
                             userId: userId,
                             username: username,
                             ownerId: car.ownerId,
+                            ownerName: car.ownerName,
                             createdAt: new Date().toISOString(),
                             status: "Pending"
                         };
-
                         await addItem("bids", newBid);
                         alert("Your bid has been placed successfully.");
+                        window.location.href = "./mybiddings.html"
                     } else {
-                        alert("Your bid is lower than the current highest bid.");
+                        alert(`Your bid is lower than the current highest bid (Current Highest Bid for this Date range is ${highestBid})`);
                     }
                 });
 
@@ -274,7 +282,14 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", renderCarDetails);
+        // document.addEventListener("DOMContentLoaded",()=>{
+        //     renderCarDetails
+        // });
+        document.getElementById('logout-link').addEventListener('click', (event) => {
+                event.preventDefault();
+                logout();
+            });
+        renderCarDetails();
     </script>
 </body>
 

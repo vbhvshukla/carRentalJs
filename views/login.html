@@ -107,6 +107,13 @@
             <p>Not registered? <a href="./register.html">Sign up here</a></p>
         </div>
     </div>
+    <script type="module">
+        import {checkAuth} from "../js/utils/auth.js";
+        document.addEventListener("DOMContentLoaded",()=>{
+            
+            if(checkAuth()) window.location.href="./index.html";
+        })
+    </script>
     <script type="module" defer src="/js/app/login.js"></script>
 </body>
 

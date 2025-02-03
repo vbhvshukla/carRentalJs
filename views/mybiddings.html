@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,6 +26,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: -20px;
         }
 
         .header .logo img {
@@ -37,9 +39,16 @@
         }
 
         .nav-links a {
-            color: #fff;
+            color: white;
             text-decoration: none;
-            font-size: 16px;
+            margin-left: 20px;
+            font-weight: 500;
+            transition: color 0.3s;
+
+        }
+
+        .nav-links a:hover {
+            color: #ffc107;
         }
 
         .bidding-history {
@@ -63,20 +72,18 @@
         .bidding-item {
             padding: 15px;
             border-bottom: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
         }
 
         .bidding-item:last-child {
             border-bottom: none;
         }
 
-        .footer {
-            text-align: center;
-            background-color: #0d7963;
-            color: #fff;
-            padding: 15px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
+        .edit-inputs {
+            display: none;
+            margin-top:20px;
+            /* padding:1px; */
         }
 
         .status-pending {
@@ -91,6 +98,38 @@
             color: red;
         }
 
+        .footer {
+            text-align: center;
+            background-color: #0d7963;
+            color: #fff;
+            padding: 15px;
+            /* position: fixed; */
+            bottom: 0;
+            width: 97.5%;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        input[type="date"],
+        input[type="number"] {
+            padding: 8px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
         @media (max-width: 768px) {
             .bidding-history {
                 padding: 15px;
@@ -98,6 +137,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="wrap">
         <header class="header">
@@ -105,10 +145,12 @@
                 <img src="../assets/images/logo.png" alt="Logo">
             </div>
             <nav class="nav-links">
-                <a href="/">Home</a>
+                <a href="./index.html">Home</a>
                 <a href="#">About Us</a>
                 <a href="#">Contact Us</a>
-                <a href="/views/login.html">Login</a>
+                <a href="./udashboard.html">User Dashboard</a>
+                <a href="#" id="logout-link">Logout</a>
+ 
             </nav>
         </header>
 
@@ -116,16 +158,23 @@
             <h2>My Bidding History</h2>
             <ul id="bidding-list" class="bidding-list"></ul>
         </div>
+
+
+        <div class="footer">
+            Footer
+        </div>
     </div>
 
-    <div class="footer">
-        Footer
-    </div>
 
     <script type="module">
-        import { getAllItems } from "../js/utils/dbUtils.js";
+        import { getAllItemsByIndex, updateItem, getAllItems, getItemByKey } from "../js/utils/dbUtils.js";
         import { getCookie } from "../js/utils/cookie.js";
+        import {logout} from "../js/utils/auth.js";
 
+        const logoutBtn = document.getElementById('logout-link');
+        logoutBtn.addEventListener("click",()=>{
+            logout();
+        })
         async function loadBiddingHistory() {
             const userId = getCookie("userId");
             if (!userId) {
@@ -135,9 +184,7 @@
             }
 
             try {
-                const bids = await getAllItems("bids");
-                const userBids = bids.filter(bid => bid.userId === userId);
-                
+                const userBids = await getAllItemsByIndex("bids", "userId", userId);
                 const biddingList = document.getElementById("bidding-list");
                 biddingList.innerHTML = "";
 
@@ -150,16 +197,25 @@
                     const bidItem = document.createElement("li");
                     bidItem.classList.add("bidding-item");
 
-                    let statusClass = "";
-                    if (bid.status === "Pending") statusClass = "status-pending";
-                    else if (bid.status === "Approved") statusClass = "status-approved";
-                    else if (bid.status === "Rejected") statusClass = "status-rejected";
+                    let statusClass = bid.status.toLowerCase() === "pending" ? "status-pending" :
+                        bid.status.toLowerCase() === "approved" ? "status-approved" :
+                            "status-rejected";
 
                     bidItem.innerHTML = `
+                        <p><strong>Bid Id:</strong> ${bid.bidId}</p>
                         <p><strong>Car:</strong> ${bid.carName}</p>
-                        <p><strong>Bid Amount:</strong> $${bid.bidAmount} / day</p>
-                        <p><strong>Date Range:</strong> ${bid.from} to ${bid.to}</p>
+                        <p><strong>Car Owner:</strong> ${bid.ownerName}</p>
+                        <p><strong>Bid Amount:</strong> $<span id="bid-amount-${bid.bidId}">${bid.bidAmount}</span> / day</p>
+                        <p><strong>Date Range:</strong> <span id="date-range-${bid.bidId}">${bid.from} to ${bid.to}</span></p>
+                        <p><strong>Placed At:</strong> ${bid.createdAt}</p>
                         <p><strong>Status:</strong> <span class="${statusClass}">${bid.status}</span></p>
+                        ${bid.status.toLowerCase() === "pending" ? `<button onclick="toggleEdit('${bid.bidId}')">Edit</button>` : ''}
+                        <div class="edit-inputs" id="edit-section-${bid.bidId}">
+                            <label>Start Date: <input type="date" id="edit-start-${bid.bidId}" value="${bid.from}"></label>
+                            <label>End Date: <input type="date" id="edit-end-${bid.bidId}" value="${bid.to}"></label>
+                            <label>Bid Amount: <input type="number" id="edit-bid-${bid.bidId}" value="${bid.bidAmount}"></label>
+                            <button onclick="saveEdit('${bid.bidId}', '${bid.carId}')" ${bid.status !== 'Pending' ? 'disabled' : ''}>Save</button>
+                        </div>
                     `;
 
                     biddingList.appendChild(bidItem);
@@ -170,7 +226,77 @@
             }
         }
 
+        async function saveEdit(bidId, carId) {
+            const startDate = document.getElementById(`edit-start-${bidId}`).value;
+            const endDate = document.getElementById(`edit-end-${bidId}`).value;
+            const bidAmount = parseFloat(document.getElementById(`edit-bid-${bidId}`).value);
+
+            if (!startDate || !endDate || !bidAmount) {
+                alert("Please fill all fields.");
+                return;
+            }
+            if (new Date(startDate) >= new Date(endDate)) {
+                alert("Start date must be before end date.");
+                return;
+            }
+
+            const allBids = await getAllItems("bids");
+
+            const highestBid = allBids
+                .filter(b => b.carId === carId && (new Date(b.from) <= new Date(endDate) && new Date(b.to) >= new Date(startDate)))
+                .reduce((max, b) => Math.max(max, b.bidAmount), 0);
+
+            if (bidAmount < highestBid) {
+                alert(`Your bid must be higher than the current highest bid: $${highestBid}`);
+                return;
+            }
+
+
+            const currentBid = await getItemByKey("bids", bidId);
+            if (!currentBid) {
+                alert("Bid not found.");
+                return;
+            }
+
+
+            const updatedBid = {
+                ...currentBid,
+                from: startDate,
+                to: endDate,
+                bidAmount: bidAmount
+            };
+
+
+            await updateItem("bids", updatedBid);
+            alert("Bid updated successfully.");
+            loadBiddingHistory();
+        }
+
+
+        function toggleEdit(bidId) {
+            const editSection = document.getElementById(`edit-section-${bidId}`);
+            editSection.style.display = editSection.style.display === "block" ? "none" : "block";
+        }
+        //i have attatched it to global scope
+        window.saveEdit = saveEdit;
+        window.toggleEdit = toggleEdit;
+
         document.addEventListener("DOMContentLoaded", loadBiddingHistory);
     </script>
+    <script type="module">
+        import { checkAuth ,logout} from "../js/utils/auth.js";
+        document.addEventListener("DOMContentLoaded", () => {
+            if(checkAuth && userId && role=='customer'){
+            document.getElementById('logout-link').addEventListener('click', (event) => {
+                event.preventDefault();
+                logout();
+            });
+        }
+        else{
+            window.href.location="./index.html";
+        }
+    })
+    </script>
 </body>
+
 </html>

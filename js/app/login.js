@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setCookie("role", user.role, 1);
 
         if (role === "owner") {
-            window.location.href = "./owner/dashboard";
+            window.location.href = "./odashboard.html";
         }
         else if (role === "admin") {
             window.location.href = "./admin/dashboard";

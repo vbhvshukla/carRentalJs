@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Rental</title>
     <link rel="stylesheet" href="/styles/index.css">
-    <link rel="stylesheet" href="/styles/card.css">
 </head>
 
 <body>
@@ -16,17 +15,77 @@
                 <img src="../assets/images/logo.png" alt="Logo">
             </div>
             <nav class="nav-links">
-                <a href="#">About Us</a>
-                <a href="#">Contact Us</a>
-                <a href="/views/login.html">Login/Signup</a>
+                <a href="#" id="about-us-link">About Us</a>
+                <a href="#" id="contact-us-link">Contact Us</a>
+                <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a>
+                <a href="./udashboard.html" id="user-dashboard-link">User Dashboard</a>
+                <a href="./login.html" id="login-signup-link">Login</a>
+                <a href="#" id="logout-link">Logout</a>
             </nav>
         </div>
 
         <div class="main">
             <div class="sidebar">
-                Lorem ipsum dolor, sit amet consectetur adipisicing elit. Voluptatibus tempora, ea veniam assumenda
-                exercitationem vel, iure eligendi saepe rem perferendis provident obcaecati necessitatibus vero dolore,
-                aperiam quod molestiae inventore amet.
+                <h3>Search for Cars</h3>
+                <form id="search-form">
+                    <div class="form-group">
+                        <label for="location">Location:</label>
+                        <input type="text" id="location" name="location">
+                    </div>
+                    <div class="form-group">
+                        <label for="start-date">Start Date:</label>
+                        <input type="date" id="start-date" name="start-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="end-date">End Date:</label>
+                        <input type="date" id="end-date" name="end-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="car-category">Car Category:</label>
+                        <select id="car-category" name="car-category">
+                            <option value="">Select Category</option>
+                            <option value="sedan">Sedan</option>
+                            <option value="suv">SUV</option>
+                            <option value="hatchback">Hatchback</option>
+                        </select>
+                    </div>
+                    <h3>Filter by</h3>
+                    <div class="form-group">
+                        <label for="price-range">Price Range: <span id="price-range-value">500</span></label>
+                        <div>
+                            <span>0</span>
+                            <input type="range" id="price-range" name="price-range" min="0" max="1000" value="500"
+                                step="100" oninput="updatePriceRangeValue(this.value)">
+                            <span>1000</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="car-type">Car Type:</label>
+                        <select id="car-type" name="car-type">
+                            <option value="">Select Type</option>
+                            <option value="automatic">Automatic</option>
+                            <option value="manual">Manual</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="availability">Availability:</label>
+                        <select id="availability" name="availability">
+                            <option value="">Select Availability</option>
+                            <option value="available">Available</option>
+                            <option value="unavailable">Unavailable</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="features">Features:</label>
+                        <input type="text" id="features" name="features" placeholder="e.g., AC, Bluetooth">
+                    </div>
+                    <div class="form-group">
+                        <label for="rating">Minimum Rating:</label>
+                        <input type="number" id="rating" name="rating" min="0" max="5" step="0.1"
+                            placeholder="e.g., 4.0">
+                    </div>
+                    <button type="submit">Search</button>
+                </form>
             </div>
 
             <div class="content">
@@ -41,6 +100,33 @@
 
     <script type="module">
         import { getAllItems } from "../js/utils/dbUtils.js";
+        import { checkAuth, logout } from "../js/utils/auth.js";
+        import {getCookie} from "../js/utils/cookie.js";
+
+        const role = getCookie("role");
+        if(role === 'owner'){
+            window.location.href="./odashboard.html";
+        }
+
+        async function updateNavLinks() {
+            const isAuthenticated = await checkAuth();
+            const myBiddingsLink = document.getElementById('my-biddings-link');
+            const loginSignupLink = document.getElementById('login-signup-link');
+            const logoutLink = document.getElementById('logout-link');
+            const userDashboard = document.getElementById('user-dashboard-link');
+
+            if (isAuthenticated) {
+                userDashboard.style.display = 'block';
+                loginSignupLink.style.display = 'none';
+                logoutLink.style.display = 'block';
+
+            } else {
+                userDashboard.style.display = 'none';
+                loginSignupLink.style.display = 'block';
+                logoutLink.style.display = 'none';
+
+            }
+        }
 
         async function getCars() {
             try {
@@ -71,46 +157,48 @@
             const card = document.createElement("div");
             card.className = "car-card";
             const carousel = `
-                                <div class="carousel">
-                                    <div class="carousel-images">
-                                        ${car.images
-                                            .map(
-                                                (image, index) =>
-                                                    `<img src="${image}" alt="Car Image ${index + 1}" class="carousel-image ${index === 0 ? "active" : ""}">`
-                                            )
-                                            .join("")}
-                                    </div>
-                                    <button class="carousel-button prev" onclick="prevImage(this)">&#10094;</button>
-                                    <button class="carousel-button next" onclick="nextImage(this)">&#10095;</button>
-                                </div>
-                            `;
+                <div class="carousel">
+                    <div class="carousel-images">
+                        ${car.images
+                    .map(
+                        (image, index) =>
+                            `<img src="${image}" alt="Car Image ${index + 1}" class="carousel-image ${index === 0 ? "active" : ""}">`
+                    )
+                    .join("")}
+                    </div>
+                    <button class="carousel-button prev" onclick="prevImage(this)">&#10094;</button>
+                    <button class="carousel-button next" onclick="nextImage(this)">&#10095;</button>
+                </div>
+            `;
 
             const carDetails = `
-                                <div class="car-details">
-                                    <h3 class="car-name">${car.carName}</h3>
-                                        <div class="car-features">
-                                            ${car.featured.map((feature) => `<span class="feature">${feature}</span>`).join("")}
-                                        </div>
-                                <div class="car-rating">
-                                    <span class="stars">${generateStarRating(car.avgRating)}</span>
-                                    <span class="rating-count">(${car.avgRating.toFixed(1)}/5, ${car.reviewCount} reviews)</span>
-                                </div>
-                                <div class="user-info">
-                                        <svg class="user-icon" viewBox="0 0 24 24" width="16" height="16">
-                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                        </svg>
-                                    <span class="user-name">${car.ownerName}</span>
-                                </div>
-                                <div class="car-price-city">
-                                    <span class="price">$${car.basePrice}/day</span>
-                                    <span class="city">${car.city}</span>
-                                </div>
-                                     <button class="book-now-btn">Book Now</button>
-                                </div>
-                            `;
+                <div class="car-details">
+                    <h3 class="car-name">${car.carName}</h3>
+                    <div class="car-features">
+                        ${car.featured.map((feature) => `<span class="feature">${feature}</span>`).join("")}
+                    </div>
+                    <div class="car-rating">
+                        <span class="stars">${generateStarRating(car.avgRating)}</span>
+                        <span class="rating-count">(${car.avgRating.toFixed(1)}/5, ${car.reviewCount} reviews)</span>
+                    </div>
+                    <div class="user-info">
+                        <svg class="user-icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                        <span class="user-name">${car.ownerName}</span>
+                    </div>
+                    <div class="car-price-city">
+                        <span class="price">$${car.basePrice}/day</span>
+                        <span class="city">${car.city}</span>
+                    </div>
+                    <button class="book-now-btn">Book Now</button>
+                </div>
+            `;
             card.innerHTML = carousel + carDetails;
+
             const bookNowButton = card.querySelector(".book-now-btn");
             bookNowButton.addEventListener("click", () => redirectToBookingPage(car.carId));
+
             return card;
         }
 
@@ -124,8 +212,8 @@
             });
         }
 
-        function prevImage(button) {
-            const carousel = button.parentElement;
+        window.prevImage = function(button) {
+            const carousel = button.closest(".carousel");
             const images = carousel.querySelectorAll(".carousel-image");
             let activeIndex = Array.from(images).findIndex((img) =>
                 img.classList.contains("active")
@@ -136,8 +224,8 @@
             images[activeIndex].classList.add("active");
         }
 
-        function nextImage(button) {
-            const carousel = button.parentElement;
+        window.nextImage = function(button) {
+            const carousel = button.closest(".carousel");
             const images = carousel.querySelectorAll(".carousel-image");
             let activeIndex = Array.from(images).findIndex((img) =>
                 img.classList.contains("active")
@@ -148,8 +236,109 @@
             images[activeIndex].classList.add("active");
         }
 
-        document.addEventListener("DOMContentLoaded", renderCars);
+        function updatePriceRangeValue(value) {
+            document.getElementById('price-range-value').textContent = value;
+        }
+
+        document.getElementById('search-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const filters = {};
+            const location = document.getElementById('location').value.trim();
+            const startDate = document.getElementById('start-date').value.trim();
+            const endDate = document.getElementById('end-date').value.trim();
+            const carCategory = document.getElementById('car-category').value.trim();
+            const priceRange = document.getElementById('price-range').value.trim();
+            const carType = document.getElementById('car-type').value.trim();
+            const availability = document.getElementById('availability').value.trim();
+            const features = document.getElementById('features').value
+                .split(',')
+                .map(f => f.trim())
+                .filter(f => f !== '');
+            const rating = parseFloat(document.getElementById('rating').value.trim());
+
+            if (location) filters.location = location;
+            if (carCategory) filters.carCategory = carCategory;
+            if (priceRange) filters.priceRange = parseFloat(priceRange);
+            if (carType) filters.carType = carType;
+            if (availability) filters.availability = availability;
+            if (features.length > 0) filters.features = features;
+            if (!isNaN(rating)) filters.rating = rating;
+
+            const cars = await getFilteredCars(filters);
+            renderFilteredCars(cars);
+        });
+
+        async function getFilteredCars(filters) {
+            const allCars = await getAllItems('cars');
+            // console.log('All Cars:', allCars);
+            console.log('Filters:', filters);
+
+            const filteredCars = allCars.filter(car => {
+                const locationMatch = filters.location
+                    ? filters.location.toLowerCase().split(' ').some(word => car.city?.toLowerCase().includes(word))
+                    : true;
+
+                const categoryMatch = filters.carCategory
+                    ? car.categoryName?.toLowerCase() === filters.carCategory.toLowerCase()
+                    : true;
+
+                const priceMatch = filters.priceRange
+                    ? car.basePrice <= filters.priceRange
+                    : true;
+
+                const carTypeMatch = filters.carType
+                    ? car.carType?.toLowerCase() === filters.carType.toLowerCase()
+                    : true;
+
+                const availabilityMatch = filters.availability
+                    ? car.availability?.toLowerCase() === filters.availability.toLowerCase()
+                    : true;
+
+                const featuresMatch = filters.features
+                    ? filters.features.some(f => car.featured?.map(ft => ft.toLowerCase()).includes(f.toLowerCase()))
+                    : true;
+
+                const ratingMatch = filters.rating
+                    ? car.avgRating >= filters.rating
+                    : true;
+
+                return locationMatch &&
+                    categoryMatch &&
+                    priceMatch &&
+                    carTypeMatch &&
+                    availabilityMatch &&
+                    featuresMatch &&
+                    ratingMatch;
+            });
+
+            return filteredCars;
+        }
+
+        function renderFilteredCars(cars) {
+            const carsContainer = document.getElementById("cars-container");
+            carsContainer.innerHTML = "";
+            if (cars.length === 0) {
+                carsContainer.innerHTML = "<p>No cars match your search criteria.</p>";
+                return;
+            }
+            cars.forEach((car) => {
+                const card = createCarCard(car);
+                carsContainer.appendChild(card);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderCars();
+            updateNavLinks();
+            document.getElementById('logout-link').addEventListener('click', (event) => {
+                event.preventDefault();
+                logout();
+            });
+        });
     </script>
+
+    
 </body>
 
 </html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="/styles/index.css">
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <img src="../assets/images/logo.png" alt="Logo">
+            </div>
+            <nav class="nav-links">
+                <a href="./index.html">Home</a>
+                <a href="#">About Us</a>
+                <a href="#">Contact Us</a>
+                <!-- <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a> -->
+                <!-- <a href="./login.html" id="login-signup-link">Login</a> -->
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <h3>User Dashboard</h3>
+                <ul>
+                    <li><a href="./udashboard.html">Dashboard</a></li>
+                    <li><a href="./mybiddings.html">My Biddings</a></li>
+                </ul>
+            </div>
+
+            <div class="content">
+                <h2>Accepted Bids</h2>
+                <div id="accepted-bids-container" class="bids-container"></div>
+                <h2>Rejected Bids</h2>
+                <div id="rejected-bids-container" class="bids-container"></div>
+                <h2>Current Bookings</h2>
+                <div id="current-bookings-container" class="bookings-container"></div>
+                <h2>Past Bookings</h2>
+                <div id="past-bookings-container" class="bookings-container"></div>
+                <h2>Cancelled Bookings</h2>
+                <div id="cancelled-bookings-container" class="bookings-container"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Footer
+        </div>
+    </div>
+
+    <script type="module">
+        import { getAllItemsByIndex, getItemByKey, updateItem } from "../js/utils/dbUtils.js";
+        import { checkAuth, logout } from "../js/utils/auth.js";
+        import { getCookie } from "../js/utils/cookie.js";
+
+        const role = getCookie("role");
+
+        async function updateNavLinks() {
+            const isAuthenticated = await checkAuth();
+            const myBiddingsLink = document.getElementById('my-biddings-link');
+            const loginSignupLink = document.getElementById('login-signup-link');
+            const logoutLink = document.getElementById('logout-link');
+
+            if (isAuthenticated) {
+                myBiddingsLink.style.display = 'block';
+                loginSignupLink.style.display = 'none';
+                logoutLink.style.display = 'block';
+            } else {
+                myBiddingsLink.style.display = 'none';
+                loginSignupLink.style.display = 'block';
+                logoutLink.style.display = 'none';
+            }
+        }
+
+        async function getAcceptedBids() {
+            try {
+                const userId = getCookie("userId");
+                const userBids = await getAllItemsByIndex("bids", "userId", userId);
+                return userBids.filter(bid => bid.status === "Accepted");
+            } catch (error) {
+                console.error("Error fetching accepted bids:", error);
+                return [];
+            }
+        }
+
+        async function getRejectedBids() {
+            try {
+                const userId = getCookie("userId");
+                const userBids = await getAllItemsByIndex("bids", "userId", userId);
+                return userBids.filter(bid => bid.status === "Rejected");
+            } catch (error) {
+                console.error("Error fetching rejected bids:", error);
+                return [];
+            }
+        }
+
+        async function getCurrentBookings() {
+            try {
+                const userId = getCookie("userId");
+                const userBookings = await getAllItemsByIndex("bookings", "userId", userId);
+                const currentDate = new Date().toISOString().split('T')[0];
+                return userBookings.filter(booking => booking.isValid && booking.to >= currentDate);
+            } catch (error) {
+                console.error("Error fetching current bookings:", error);
+                return [];
+            }
+        }
+
+        async function getPastBookings() {
+            try {
+                const userId = getCookie("userId");
+                const userBookings = await getAllItemsByIndex("bookings", "userId", userId);
+                const currentDate = new Date().toISOString().split('T')[0];
+                return userBookings.filter(booking => booking.to < currentDate);
+            } catch (error) {
+                console.error("Error fetching past bookings:", error);
+                return [];
+            }
+        }
+
+        async function getCancelledBookings() {
+            try {
+                const userId = getCookie("userId");
+                const userBookings = await getAllItemsByIndex("bookings", "userId", userId);
+                return userBookings.filter(booking => !booking.isValid);
+            } catch (error) {
+                console.error("Error fetching cancelled bookings:", error);
+                return [];
+            }
+        }
+
+        function createBidCard(bid) {
+            const card = document.createElement("div");
+            card.className = "car-card";
+            const bidDetails = `
+                <div class="car-details">
+                    <h3 class="car-name">${bid.carName}</h3>
+                    <div class="car-features">
+                        <span class="feature">Bid Amount: $${bid.bidAmount}</span>
+                    </div>
+                    <div class="car-rating">
+                        <span class="stars">From: ${bid.from}</span>
+                        <span class="rating-count">To: ${bid.to}</span>
+                    </div>
+                    <div class="car-price-city">
+                        <span class="price">Status: ${bid.status}</span>
+                        <span class="city">Created At: ${new Date(bid.createdAt).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `;
+            card.innerHTML = bidDetails;
+
+            return card;
+        }
+
+        function createBookingCard(booking) {
+            const card = document.createElement("div");
+            card.className = "car-card";
+            const bookingDetails = `
+                <div class="car-details">
+                    <h3 class="car-name">${booking.carName}</h3>
+                    <div class="car-features">
+                        <span class="feature">Bid Price: $${booking.bidPrice}</span>
+                    </div>
+                    <div class="car-rating">
+                        <span class="stars">From: ${booking.from}</span>
+                        <span class="rating-count">To: ${booking.to}</span>
+                    </div>
+                    <div class="car-price-city">
+                        <span class="price">Owner: ${booking.ownerName}</span>
+                        <span class="city">Created At: ${new Date(booking.createdAt).toLocaleDateString()}</span>
+                        <span class="status">${booking.isValid ? 'Active' : 'Cancelled'}</span>
+                    </div>
+                </div>
+            `;
+            card.innerHTML = bookingDetails;
+
+            return card;
+        }
+
+        async function renderAcceptedBids() {
+            const bids = await getAcceptedBids();
+            const bidsContainer = document.getElementById("accepted-bids-container");
+            bidsContainer.innerHTML = "";
+            if (bids.length === 0) {
+                bidsContainer.innerHTML = "<p>No accepted bids found.</p>";
+                return;
+            }
+            bids.forEach((bid) => {
+                const card = createBidCard(bid);
+                bidsContainer.appendChild(card);
+            });
+        }
+
+        async function renderRejectedBids() {
+            const bids = await getRejectedBids();
+            const bidsContainer = document.getElementById("rejected-bids-container");
+            bidsContainer.innerHTML = "";
+            if (bids.length === 0) {
+                bidsContainer.innerHTML = "<p>No rejected bids found.</p>";
+                return;
+            }
+            bids.forEach((bid) => {
+                const card = createBidCard(bid);
+                bidsContainer.appendChild(card);
+            });
+        }
+
+        async function renderCurrentBookings() {
+            const bookings = await getCurrentBookings();
+            const bookingsContainer = document.getElementById("current-bookings-container");
+            bookingsContainer.innerHTML = "";
+            if (bookings.length === 0) {
+                bookingsContainer.innerHTML = "<p>No current bookings found.</p>";
+                return;
+            }
+            bookings.forEach((booking) => {
+                const card = createBookingCard(booking);
+                bookingsContainer.appendChild(card);
+            });
+        }
+
+        async function renderPastBookings() {
+            const bookings = await getPastBookings();
+            const bookingsContainer = document.getElementById("past-bookings-container");
+            bookingsContainer.innerHTML = "";
+            if (bookings.length === 0) {
+                bookingsContainer.innerHTML = "<p>No past bookings found.</p>";
+                return;
+            }
+            bookings.forEach((booking) => {
+                const card = createBookingCard(booking);
+                bookingsContainer.appendChild(card);
+            });
+        }
+
+        async function renderCancelledBookings() {
+            const bookings = await getCancelledBookings();
+            const bookingsContainer = document.getElementById("cancelled-bookings-container");
+            bookingsContainer.innerHTML = "";
+            if (bookings.length === 0) {
+                bookingsContainer.innerHTML = "<p>No cancelled bookings found.</p>";
+                return;
+            }
+            bookings.forEach((booking) => {
+                const card = createBookingCard(booking);
+                bookingsContainer.appendChild(card);
+            });
+        }
+
+        if (!checkAuth || role !== 'customer') {
+            window.location.href = "./index.html";
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderAcceptedBids();
+            renderRejectedBids();
+            renderCurrentBookings();
+            renderPastBookings();
+            renderCancelledBookings();
+            updateNavLinks();
+            document.getElementById('logout-link').addEventListener('click', (event) => {
+                event.preventDefault();
+                logout();
+            });
+        });
+    </script>
+</body>
+
+</html>
