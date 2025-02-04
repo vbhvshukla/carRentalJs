@@ -109,10 +109,7 @@
     </div>
     <script type="module">
         import {checkAuth} from "../js/utils/auth.js";
-        document.addEventListener("DOMContentLoaded",()=>{
-            
-            if(checkAuth()) window.location.href="./index.html";
-        })
+        if(checkAuth()) window.location.href="./index.html";
     </script>
     <script type="module" defer src="/js/app/login.js"></script>
 </body>

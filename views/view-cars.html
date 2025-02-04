@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Cars</title>
+    <link rel="stylesheet" href="/styles/index.css">
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <img src="../assets/images/logo.png" alt="Logo">
+            </div>
+            <nav class="nav-links">
+                <a href="./index.html">Home</a>
+                <a href="#">About Us</a>
+                <a href="#">Contact Us</a>
+                <a href="./odashboard.html">Owner Dashboard</a>
+                <a href="./login.html" id="login-signup-link">Login</a>
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <h3>Owner Dashboard</h3>
+                <ul>
+                    <li><a href="./odashboard.html">Dashboard</a></li>
+                    <li><a href="./add-car.html">Add New Car</a></li>
+                    <li><a href="./view-cars.html">View Cars</a></li>
+                </ul>
+            </div>
+
+            <div class="content">
+                <h2>Your Cars</h2>
+                <div id="cars-container" class="cars-container"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Footer
+        </div>
+    </div>
+
+    <script type="module">
+        import { getAllItemsByIndex, updateItem } from "../js/utils/dbUtils.js";
+        import { checkAuth, logout } from "../js/utils/auth.js";
+        import { getCookie } from "../js/utils/cookie.js";
+
+        const userId = getCookie("userId");
+        const role = getCookie("role");
+
+        async function updateNavLinks() {
+            const isAuthenticated = await checkAuth();
+            const loginSignupLink = document.getElementById('login-signup-link');
+            const logoutLink = document.getElementById('logout-link');
+
+            if (isAuthenticated) {
+                loginSignupLink.style.display = 'none';
+                logoutLink.style.display = 'block';
+            } else {
+                loginSignupLink.style.display = 'block';
+                logoutLink.style.display = 'none';
+            }
+        }
+
+        async function renderOwnerCars() {
+            const ownerId = getCookie("userId");
+            const cars = await getAllItemsByIndex("cars", "ownerId", ownerId);
+            const carsContainer = document.getElementById("cars-container");
+            carsContainer.innerHTML = "";
+            if (cars.length === 0) {
+                carsContainer.innerHTML = "<p>No cars found.</p>";
+                return;
+            }
+            cars.forEach((car) => {
+                const card = createCarCard(car);
+                carsContainer.appendChild(card);
+            });
+        }
+        function populateCategoryOptions() {
+            const categorySelect = document.getElementById('category');
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.categoryId;
+                option.textContent = category.categoryName;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        function createCarCard(car) {
+            const card = document.createElement("div");
+            card.className = "car-card";
+            const carDetails = `
+                <div class="car-details">
+                    <h3 class="car-name">${car.carName}</h3>
+                    <div class="car-features">
+                        ${car.featured.map((feature) => `<span class="feature">${feature}</span>`).join("")}
+                    </div>
+                    <div class="car-rating">
+                        <span class="stars">${generateStarRating(car.avgRating)}</span>
+                        <span class="rating-count">(${car.avgRating.toFixed(1)}/5, ${car.reviewCount} reviews)</span>
+                    </div>
+                    <div class="car-price-city">
+                        <span class="price">$${car.basePrice}/day</span>
+                        <span class="city">${car.city}</span>
+                    </div>
+                    <div class="car-description">
+                        <p>${car.description}</p>
+                    </div>
+                    <div class="car-images">
+                        ${car.images.map((image) => `<img src="${image}" alt="Car Image">`).join("")}
+                    </div>
+                    <div class="car-info">
+                        <p>Type: ${car.carType}</p>
+                        <p>Category: ${car.categoryName}</p>
+                        <p>Created At: ${new Date(car.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <button class="edit-car-btn">Edit Car</button>
+                </div>
+            `;
+            card.innerHTML = carDetails;
+
+            const editCarButton = card.querySelector(".edit-car-btn");
+            editCarButton.addEventListener("click", () => editCar(car));
+
+            return card;
+        }
+
+        function generateStarRating(avgRating) {
+            const fullStars = Math.floor(avgRating);
+            const halfStar = avgRating % 1 >= 0.5 ? 1 : 0;
+            const emptyStars = 5 - fullStars - halfStar;
+
+            return (
+                "★".repeat(fullStars) +
+                "½".repeat(halfStar) +
+                "☆".repeat(emptyStars)
+            );
+        }
+
+        function editCar(car) {
+            const carDetails = `
+                <div class="car-edit-form">
+                    <h3>Edit Car: ${car.carName}</h3>
+                    <form id="edit-car-form">
+                        <div class="form-group">
+                            <label for="carName">Car Name:</label>
+                            <input type="text" id="carName" name="carName" value="${car.carName}">
+                        </div>
+                        <div class="form-group">
+                            <label for="basePrice">Base Price:</label>
+                            <input type="number" id="basePrice" name="basePrice" value="${car.basePrice}">
+                        </div>
+                        <div class="form-group">
+                            <label for="carType">Car Type:</label>
+                            <input type="text" id="carType" name="carType" value="${car.carType}">
+                        </div>
+                        <div class="form-group">
+                            <label for="categoryName">Category Name:</label>
+                            <input type="text" id="categoryName" name="categoryName" value="${car.categoryName}">
+                        </div>
+                        <div class="form-group">
+                            <label for="city">City:</label>
+                            <input type="text" id="city" name="city" value="${car.city}">
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description:</label>
+                            <textarea id="description" name="description">${car.description}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="featured">Featured:</label>
+                            <input type="text" id="featured" name="featured" value="${car.featured.join(', ')}">
+                        </div>
+                        
+                        <button type="submit">Save Changes</button>
+                    </form>
+                </div>
+            `;
+
+            const carsContainer = document.getElementById("cars-container");
+            carsContainer.innerHTML = carDetails;
+
+            document.getElementById("edit-car-form").addEventListener("submit", async function (event) {
+                event.preventDefault();
+
+                const updatedCar = {
+                    ...car,
+                    carName: document.getElementById("carName").value,
+                    basePrice: parseFloat(document.getElementById("basePrice").value),
+                    carType: document.getElementById("carType").value,
+                    categoryName: document.getElementById("categoryName").value,
+                    city: document.getElementById("city").value,
+                    description: document.getElementById("description").value,
+                    featured: document.getElementById("featured").value.split(',').map(f => f.trim()),
+                    // images: document.getElementById("images").value.split(',').map(i => i.trim())
+                };
+
+                await updateItem("cars", updatedCar);
+                alert("Car details updated successfully!");
+                renderOwnerCars();
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+            if (checkAuth && userId && role == 'owner') {
+                updateNavLinks();
+                renderOwnerCars();
+                // populateCategoryOptions();
+                document.getElementById('logout-link').addEventListener('click', (event) => {
+                    event.preventDefault();
+                    logout();
+                });
+            } else {
+                window.location.href = './index.html';
+            }
+        });
+    </script>
+</body>
+
+</html>

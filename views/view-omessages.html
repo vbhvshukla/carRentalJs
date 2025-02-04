@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .wrap {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #0d7963;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header .logo img {
+            height: 60px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #ffc107;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message-list {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-item {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .message-item:last-child {
+            border-bottom: none;
+        }
+
+        .message-item:hover {
+            background-color: #f1f1f1;
+            cursor: pointer;
+        }
+
+        .message-item .timestamp {
+            font-size: 0.9em;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <img src="../assets/images/logo.png" alt="Logo">
+            </div>
+            <nav class="nav-links">
+                <a href="./index.html">Home</a>
+                <a href="#">About Us</a>
+                <a href="#">Contact Us</a>
+                <a href="./mybiddings.html">My Biddings</a>
+                <a href="./login.html" id="login-signup-link">Login</a>
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <h2>All Conversations</h2>
+            <div id="message-list" class="message-list"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getAllItemsByIndex, getItemByKey } from "../js/utils/dbUtils.js";
+        import { getCookie } from "../js/utils/cookie.js";
+        import { checkAuth, logout } from "../js/utils/auth.js";
+
+        const userId = getCookie("userId");
+        if (!userId) window.location.href = "./login.html";
+
+        async function getUserNames(participants) {
+            const userNames = await Promise.all(participants.map(async (participantId) => {
+                const user = await getItemByKey("users", participantId);
+                return user ? { id: participantId, name: user.username } : { id: participantId, name: participantId };
+            }));
+            return userNames;
+        }
+
+        async function renderMessages() {
+            const conversations = await getAllItemsByIndex("conversations", "participants", userId);
+            const messageList = document.getElementById("message-list");
+            messageList.innerHTML = "";
+
+            for (const conversation of conversations) {
+                const userNames = await getUserNames(conversation.participants);
+                const otherParticipant = userNames.find(user => user.id !== userId);
+                const item = document.createElement("div");
+                item.className = "message-item";
+                item.innerHTML = `
+                    <div><strong>Participant:</strong> ${otherParticipant.name}</div>
+                    <div><strong>Last Message:</strong> ${conversation.lastMessage}</div>
+                    <div class="timestamp"><strong>Timestamp:</strong> ${new Date(conversation.lastTimestamp).toLocaleString()}</div>
+                `;
+                item.addEventListener("click", () => {
+                    window.location.href = `./chat.html?chatId=${conversation.chatId}`;
+                });
+                messageList.appendChild(item);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderMessages();
+            updateNavLinks();
+            document.getElementById('logout-link').addEventListener('click', (event) => {
+                event.preventDefault();
+                logout();
+            });
+        });
+
+        async function updateNavLinks() {
+            const isAuthenticated = await checkAuth();
+            const loginSignupLink = document.getElementById('login-signup-link');
+            const logoutLink = document.getElementById('logout-link');
+
+            if (isAuthenticated) {
+                loginSignupLink.style.display = 'none';
+                logoutLink.style.display = 'block';
+            } else {
+                loginSignupLink.style.display = 'block';
+                logoutLink.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

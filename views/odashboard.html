@@ -17,8 +17,8 @@
             <nav class="nav-links">
                 <a href="#" id="about-us-link">About Us</a>
                 <a href="#" id="contact-us-link">Contact Us</a>
-                <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a>
-                <a href="./login.html" id="login-signup-link">Login</a>
+                <!-- <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a> -->
+                <!-- <a href="./login.html" id="login-signup-link">Login</a> -->
                 <a href="#" id="logout-link">Logout</a>
             </nav>
         </div>
@@ -29,17 +29,20 @@
                 <ul>
                     <li><a href="./odashboard.html">Dashboard</a></li>
                     <li><a href="./add-car.html">Add New Car</a></li>
-                    <li><a href="./view-bookings.html">View Bookings</a></li>
-                </ul>
+                    <li><a href="./view-cars.html">View Cars</a></li>
+                    <li><a href="./view-omessages.html">View All Message</a></li>
+
+
+0.                </ul>
             </div>
 
             <div class="content">
-                <h2>Bids on Your Cars</h2>
-                <div id="bids-container" class="bids-container"></div>
+                <h2>Pending Bids on Your Cars</h2>
+                <div id="pending-bids-container" class="bids-container"></div>
                 <h2>Rejected Bids</h2>
                 <div id="rejected-bids-container" class="bids-container"></div>
-                <!-- <h2>Your Bookings</h2>
-                <div id="bookings-container" class="bookings-container"></div> -->
+                <h2>Your Bookings</h2>
+                <div id="bookings-container" class="bookings-container"></div>
             </div>
         </div>
 
@@ -53,6 +56,11 @@
         import { checkAuth, logout } from "../js/utils/auth.js";
         import { getCookie } from "../js/utils/cookie.js";
         import { generateRandomId } from "../js/utils/generateId.js";
+
+        const userId = getCookie("userId");
+        if(!userId){
+            window.location.href="./login.html"
+        }
 
         async function updateNavLinks() {
             const isAuthenticated = await checkAuth();
@@ -70,28 +78,39 @@
                 logoutLink.style.display = 'none';
             }
         }
-        
-        async function getBids(status) {
+
+        async function getPendingBids() {
             try {
                 const ownerId = getCookie("userId");
                 const ownerBids = await getAllItemsByIndex("bids", "ownerId", ownerId);
-                return ownerBids.filter(bid => bid.status === status);
+                return ownerBids.filter(bid => bid.status === "Pending");
             } catch (error) {
-                console.error("Error fetching bids:", error);
+                console.error("Error fetching pending bids:", error);
                 return [];
             }
         }
 
-        // async function getBookings() {
-        //     try {
-        //         const ownerId = getCookie("userId");
-        //         const ownerBookings = await getAllItemsByIndex("bookings", "ownerId", ownerId);
-        //         return ownerBookings;
-        //     } catch (error) {
-        //         console.error("Error fetching bookings:", error);
-        //         return [];
-        //     }
-        // }
+        async function getRejectedBids() {
+            try {
+                const ownerId = getCookie("userId");
+                const ownerBids = await getAllItemsByIndex("bids", "ownerId", ownerId);
+                return ownerBids.filter(bid => bid.status === "Rejected");
+            } catch (error) {
+                console.error("Error fetching rejected bids:", error);
+                return [];
+            }
+        }
+
+        async function getBookings() {
+            try {
+                const ownerId = getCookie("userId");
+                const ownerBookings = await getAllItemsByIndex("bookings", "ownerId", ownerId);
+                return ownerBookings;
+            } catch (error) {
+                console.error("Error fetching bookings:", error);
+                return [];
+            }
+        }
 
         function createBidCard(bid) {
             const card = document.createElement("div");
@@ -110,7 +129,7 @@
                         <span class="price">Status: ${bid.status}</span>
                         <span class="city">Created At: ${new Date(bid.createdAt).toLocaleDateString()}</span>
                     </div>
-                    ${bid.status !== "Rejected" ? `
+                    ${bid.status === "Pending" ? `
                     <button class="accept-bid-btn">Accept Bid</button>
                     <button class="reject-bid-btn">Reject Bid</button>
                     ` : ''}
@@ -118,7 +137,7 @@
             `;
             card.innerHTML = bidDetails;
 
-            if (bid.status !== "Rejected") {
+            if (bid.status === "Pending") {
                 const acceptBidButton = card.querySelector(".accept-bid-btn");
                 const rejectBidButton = card.querySelector(".reject-bid-btn");
 
@@ -153,47 +172,47 @@
             return card;
         }
 
-        async function renderBids() {
-            const pendingBids = await getBids("Pending");
-            const rejectedBids = await getBids("Rejected");
-            const bidsContainer = document.getElementById("bids-container");
-            const rejectedBidsContainer = document.getElementById("rejected-bids-container");
-            
+        async function renderPendingBids() {
+            const bids = await getPendingBids();
+            const bidsContainer = document.getElementById("pending-bids-container");
             bidsContainer.innerHTML = "";
-            rejectedBidsContainer.innerHTML = "";
-
-            if (pendingBids.length === 0) {
-                bidsContainer.innerHTML = "<p>No bids on your cars.</p>";
-            } else {
-                pendingBids.forEach((bid) => {
-                    const card = createBidCard(bid);
-                    bidsContainer.appendChild(card);
-                });
+            if (bids.length === 0) {
+                bidsContainer.innerHTML = "<p>No pending bids on your cars.</p>";
+                return;
             }
-
-            if (rejectedBids.length === 0) {
-                rejectedBidsContainer.innerHTML = "<p>No rejected bids.</p>";
-            } else {
-                rejectedBids.forEach((bid) => {
-                    const card = createBidCard(bid);
-                    rejectedBidsContainer.appendChild(card);
-                });
-            }
+            bids.forEach((bid) => {
+                const card = createBidCard(bid);
+                bidsContainer.appendChild(card);
+            });
         }
 
-        // async function renderBookings() {
-        //     const bookings = await getBookings();
-        //     const bookingsContainer = document.getElementById("bookings-container");
-        //     bookingsContainer.innerHTML = "";
-        //     if (bookings.length === 0) {
-        //         bookingsContainer.innerHTML = "<p>No bookings found.</p>";
-        //         return;
-        //     }
-        //     bookings.forEach((booking) => {
-        //         const card = createBookingCard(booking);
-        //         bookingsContainer.appendChild(card);
-        //     });
-        // }
+        async function renderRejectedBids() {
+            const bids = await getRejectedBids();
+            const bidsContainer = document.getElementById("rejected-bids-container");
+            bidsContainer.innerHTML = "";
+            if (bids.length === 0) {
+                bidsContainer.innerHTML = "<p>No rejected bids.</p>";
+                return;
+            }
+            bids.forEach((bid) => {
+                const card = createBidCard(bid);
+                bidsContainer.appendChild(card);
+            });
+        }
+
+        async function renderBookings() {
+            const bookings = await getBookings();
+            const bookingsContainer = document.getElementById("bookings-container");
+            bookingsContainer.innerHTML = "";
+            if (bookings.length === 0) {
+                bookingsContainer.innerHTML = "<p>No bookings found.</p>";
+                return;
+            }
+            bookings.forEach((booking) => {
+                const card = createBookingCard(booking);
+                bookingsContainer.appendChild(card);
+            });
+        }
 
         function isDateRangeOverlap(startDate1, endDate1, startDate2, endDate2) {
             return (startDate1 <= endDate2 && endDate1 >= startDate2);
@@ -201,7 +220,7 @@
 
         async function acceptBid(acceptedBid) {
             try {
-                const bids = await getBids("Pending");
+                const bids = await getPendingBids();
                 const overlappingBids = bids.filter(bid =>
                     bid.carId === acceptedBid.carId &&
                     bid.bidId !== acceptedBid.bidId &&
@@ -217,6 +236,7 @@
                 }
 
                 const booking = {
+                    bid:acceptedBid.bidId,
                     bookingId: generateRandomId(),
                     userId: acceptedBid.userId,
                     username: acceptedBid.username,
@@ -233,9 +253,15 @@
 
                 await addItem("bookings", booking);
 
+                // Update car availability to "unavailable"
+                const car = await getItemByKey("cars", acceptedBid.carId);
+                car.availability = "unavailable";
+                await updateItem("cars", car);
+
                 alert(`Accepted bid with ID: ${acceptedBid.bidId}`);
-                renderBids();
-                // renderBookings();
+                renderPendingBids();
+                renderRejectedBids();
+                renderBookings();
             } catch (error) {
                 console.error(`Error accepting bid with ID: ${acceptedBid.bidId}`, error);
                 alert('Failed to accept bid. Please try again.');
@@ -248,28 +274,25 @@
                 bid.status = "Rejected";
                 await updateItem("bids", bid);
                 alert(`Rejected bid with ID: ${bidId}`);
-                renderBids();
+                renderPendingBids();
+                renderRejectedBids();
             } catch (error) {
                 console.error(`Error rejecting bid with ID: ${bidId}`, error);
                 alert('Failed to reject bid. Please try again.');
             }
         }
 
+        document.getElementById('logout-link').addEventListener('click', (event) => {
+                event.preventDefault();
+                logout();
+            });
+
         document.addEventListener("DOMContentLoaded", () => {
-            const userId = getCookie("userId");
-            const role = getCookie("role");
-            if (checkAuth && userId && role == 'owner') {
-                renderBids();
-                // renderBookings();
-                updateNavLinks();
-                document.getElementById('logout-link').addEventListener('click', (event) => {
-                    event.preventDefault();
-                    logout();
-                });
-            }
-            else {
-                window.location.href="./index.html";
-            }
+            renderPendingBids();
+            renderRejectedBids();
+            renderBookings();
+            updateNavLinks();
+            
         });
     </script>
 </body>

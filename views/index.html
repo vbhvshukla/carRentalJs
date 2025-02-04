@@ -17,7 +17,7 @@
             <nav class="nav-links">
                 <a href="#" id="about-us-link">About Us</a>
                 <a href="#" id="contact-us-link">Contact Us</a>
-                <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a>
+                <!-- <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a> -->
                 <a href="./udashboard.html" id="user-dashboard-link">User Dashboard</a>
                 <a href="./login.html" id="login-signup-link">Login</a>
                 <a href="#" id="logout-link">Logout</a>
@@ -32,14 +32,14 @@
                         <label for="location">Location:</label>
                         <input type="text" id="location" name="location">
                     </div>
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label for="start-date">Start Date:</label>
                         <input type="date" id="start-date" name="start-date">
                     </div>
                     <div class="form-group">
                         <label for="end-date">End Date:</label>
                         <input type="date" id="end-date" name="end-date">
-                    </div>
+                    </div> -->
                     <div class="form-group">
                         <label for="car-category">Car Category:</label>
                         <select id="car-category" name="car-category">
@@ -101,22 +101,23 @@
     <script type="module">
         import { getAllItems } from "../js/utils/dbUtils.js";
         import { checkAuth, logout } from "../js/utils/auth.js";
-        import {getCookie} from "../js/utils/cookie.js";
+        import { getCookie } from "../js/utils/cookie.js";
 
         const role = getCookie("role");
-        if(role === 'owner'){
-            window.location.href="./odashboard.html";
+        if (role === 'owner') {
+            window.location.href = "./odashboard.html";
         }
 
         async function updateNavLinks() {
             const isAuthenticated = await checkAuth();
-            const myBiddingsLink = document.getElementById('my-biddings-link');
+            // const myBiddingsLink = document.getElementById('my-biddings-link');
             const loginSignupLink = document.getElementById('login-signup-link');
             const logoutLink = document.getElementById('logout-link');
             const userDashboard = document.getElementById('user-dashboard-link');
 
             if (isAuthenticated) {
                 userDashboard.style.display = 'block';
+                // myBiddingsLink.style.display = 'block';
                 loginSignupLink.style.display = 'none';
                 logoutLink.style.display = 'block';
 
@@ -124,6 +125,7 @@
                 userDashboard.style.display = 'none';
                 loginSignupLink.style.display = 'block';
                 logoutLink.style.display = 'none';
+                // myBiddingsLink.style.display='none';
 
             }
         }
@@ -212,7 +214,7 @@
             });
         }
 
-        window.prevImage = function(button) {
+        window.prevImage = function (button) {
             const carousel = button.closest(".carousel");
             const images = carousel.querySelectorAll(".carousel-image");
             let activeIndex = Array.from(images).findIndex((img) =>
@@ -224,7 +226,7 @@
             images[activeIndex].classList.add("active");
         }
 
-        window.nextImage = function(button) {
+        window.nextImage = function (button) {
             const carousel = button.closest(".carousel");
             const images = carousel.querySelectorAll(".carousel-image");
             let activeIndex = Array.from(images).findIndex((img) =>
@@ -245,8 +247,8 @@
 
             const filters = {};
             const location = document.getElementById('location').value.trim();
-            const startDate = document.getElementById('start-date').value.trim();
-            const endDate = document.getElementById('end-date').value.trim();
+            // const startDate = document.getElementById('start-date').value.trim();
+            // const endDate = document.getElementById('end-date').value.trim();
             const carCategory = document.getElementById('car-category').value.trim();
             const priceRange = document.getElementById('price-range').value.trim();
             const carType = document.getElementById('car-type').value.trim();
@@ -338,7 +340,7 @@
         });
     </script>
 
-    
+
 </body>
 
 </html>

@@ -381,6 +381,15 @@ function openDb() {
         bidStore.createIndex("status", "status");
         bidStore.createIndex("createdAt", "createdAt");
       }
+
+      
+      if (!db.objectStoreNames.contains("conversations")) {
+        const conversationStore = db.createObjectStore("conversations", {
+          keyPath: "chatId",
+        });
+        conversationStore.createIndex("participants", "participants", { multiEntry: true });
+        conversationStore.createIndex("lastTimestamp", "lastTimestamp");
+      }
     };
   });
 }

@@ -209,13 +209,7 @@
                         <p><strong>Date Range:</strong> <span id="date-range-${bid.bidId}">${bid.from} to ${bid.to}</span></p>
                         <p><strong>Placed At:</strong> ${bid.createdAt}</p>
                         <p><strong>Status:</strong> <span class="${statusClass}">${bid.status}</span></p>
-                        ${bid.status.toLowerCase() === "pending" ? `<button onclick="toggleEdit('${bid.bidId}')">Edit</button>` : ''}
-                        <div class="edit-inputs" id="edit-section-${bid.bidId}">
-                            <label>Start Date: <input type="date" id="edit-start-${bid.bidId}" value="${bid.from}"></label>
-                            <label>End Date: <input type="date" id="edit-end-${bid.bidId}" value="${bid.to}"></label>
-                            <label>Bid Amount: <input type="number" id="edit-bid-${bid.bidId}" value="${bid.bidAmount}"></label>
-                            <button onclick="saveEdit('${bid.bidId}', '${bid.carId}')" ${bid.status !== 'Pending' ? 'disabled' : ''}>Save</button>
-                        </div>
+                       
                     `;
 
                     biddingList.appendChild(bidItem);

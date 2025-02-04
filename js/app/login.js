@@ -29,18 +29,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         setCookie("username", user.username, 1);
-        setCookie("userId",user.userId,1);
+        setCookie("userId", user.userId, 1);
         setCookie("email", user.email, 1);
         setCookie("role", user.role, 1);
 
         if (role === "owner") {
             window.location.href = "./odashboard.html";
-        }
-        else if (role === "admin") {
-            window.location.href = "./admin/dashboard";
-        }
-        else {
-            window.location.href = "./index.html"
+        } else {
+            window.location.href = "./index.html";
         }
     })
 })
