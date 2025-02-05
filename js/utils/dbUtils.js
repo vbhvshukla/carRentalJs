@@ -104,4 +104,58 @@ async function deleteItem(storeName, key) {
     }
 }
 
-export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem ,getItemByKey,getAllItemsByIndex};
+async function getItemsWithPagination(storeName,page=1,itemsPerPage = 5){
+    try {
+        await openDb();
+        const store = getObjectStore(storeName,"readonly");
+        return new Promise((resolve,reject)=>{
+            const request = store.openCursor();
+            const items = [];
+            let count = 0;
+            const start = (page-1)*itemsPerPage;
+            const end = start+itemsPerPage;
+
+            request.onsuccess=(event)=>{
+                const cursor = event.target.result;
+                if(cursor){
+                    //what we are doing is if the cursor's current item is added to the
+                    //items if it falls within the current page range and then the counter is incremented
+                    if(count>=start && count < end){
+                        items.push(cursor.value);
+                    }
+                    count++;
+                    if(count<end){
+                        cursor.continue();
+                    }
+                    else{
+                        resolve(items);
+                    }
+                }
+                else{
+                    resolve(items);
+                }
+            };
+            request.onerror = (event) =>reject(new Error(`Fetch Failed :: ${event.target.error}`))
+        });
+    }
+    catch(error){
+        return Promise.reject(new Error(`Database error: ${error.message}`));
+    }
+}
+
+async function getTotalItems(storeName) {
+    try {
+        await openDb();
+        const store = getObjectStore(storeName, "readonly");
+        return new Promise((resolve, reject) => {
+            const request = store.count();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (event) => reject(new Error(`Count failed: ${event.target.error}`));
+        });
+    } catch (error) {
+        return Promise.reject(new Error(`Database error: ${error.message}`));
+    }
+}
+
+
+export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem ,getItemByKey,getAllItemsByIndex,getItemsWithPagination,getTotalItems};
