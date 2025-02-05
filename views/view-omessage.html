@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversation</title>
+    <title>Owner Messages</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -130,7 +130,7 @@
         </div>
 
         <div class="main">
-            <h2>Conversation</h2>
+            <h2>Owner Messages</h2>
             <div id="chat-messages" class="chat-messages"></div>
 
             <div class="chat-input">
@@ -148,20 +148,42 @@
         import { generateRandomId } from "../js/utils/generateId.js";
 
         const userId = getCookie("userId");
-        if (!userId) window.location.href = "./login.html";
+        const userRole = getCookie("role");
 
-        function getChatIdFromURL() {
+        if (!userId || userRole !== "owner") {
+            window.location.href = "./index.html";
+        }
+
+        function getContextFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('chatId');
+            const contextParam = urlParams.get('context');
+            if (contextParam) {
+                return JSON.parse(decodeURIComponent(contextParam));
+            } else {
+                return { chatId: urlParams.get('chatId') };
+            }
         }
 
         async function renderMessages() {
-            const chatId = getChatIdFromURL();
+            const context = getContextFromURL();
+            const chatId = context.chatId;
+            const conversation = await getItemByKey("conversations", chatId);
+
+            if (!conversation) {
+                // Create a new conversation if it doesn't exist
+                const newConversation = {
+                    chatId,
+                    participants: [userId, context.ownerId || ''],
+                    lastMessage: '',
+                    lastTimestamp: ''
+                };
+                await addItem("conversations", newConversation);
+            }
+
             const messages = await getAllItemsByIndex("messages", "chatId", chatId);
             const messageList = document.getElementById("chat-messages");
             messageList.innerHTML = "";
-
-            messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
             for (const message of messages) {
                 const fromUser = await getItemByKey("users", message.fromUserId);
@@ -177,16 +199,17 @@
             }
         }
 
-        async function sendMessage(chatId, fromUserId, toUserId, message, file) {
+        async function sendMessage(chatId, fromUserId, toUserId, message, file, context) {
             const newMessage = {
-                messageId: generateRandomId('msg'),
+                messageId: generateRandomId(),
                 chatId,
                 fromUserId,
                 toUserId,
                 message,
                 createdAt: new Date().toISOString(),
                 hasAttachment: !!file,
-                attachment: file ? await readFileAsDataURL(file) : null
+                attachment: file ? await readFileAsDataURL(file) : null,
+                context
             };
 
             await addItem("messages", newMessage);
@@ -220,10 +243,11 @@
             const message = messageInput.value.trim();
             const file = fileInput.files[0];
             if (message || file) {
-                const chatId = getChatIdFromURL();
+                const context = getContextFromURL();
+                const chatId = context.chatId;
                 const conversation = await getItemByKey("conversations", chatId);
                 const toUserId = conversation.participants.find(participantId => participantId !== userId);
-                await sendMessage(chatId, userId, toUserId, message, file);
+                await sendMessage(chatId, userId, toUserId, message, file, context);
                 messageInput.value = "";
                 fileInput.value = "";
                 renderMessages();

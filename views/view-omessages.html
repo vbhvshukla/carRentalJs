@@ -72,14 +72,18 @@
             border-bottom: none;
         }
 
-        .message-item:hover {
-            background-color: #f1f1f1;
+        .chat-button {
+            background-color: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
             cursor: pointer;
+            margin-top: 10px;
         }
 
-        .message-item .timestamp {
-            font-size: 0.9em;
-            color: #888;
+        .chat-button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -101,7 +105,7 @@
         </div>
 
         <div class="main">
-            <h2>All Conversations</h2>
+            <h2>Owner Messages</h2>
             <div id="message-list" class="message-list"></div>
         </div>
     </div>
@@ -112,7 +116,11 @@
         import { checkAuth, logout } from "../js/utils/auth.js";
 
         const userId = getCookie("userId");
-        if (!userId) window.location.href = "./login.html";
+        const userRole = getCookie("role");
+
+        if (!userId || userRole !== "owner") {
+            window.location.href = "./index.html";
+        }
 
         async function getUserNames(participants) {
             const userNames = await Promise.all(participants.map(async (participantId) => {
@@ -130,18 +138,22 @@
             for (const conversation of conversations) {
                 const userNames = await getUserNames(conversation.participants);
                 const otherParticipant = userNames.find(user => user.id !== userId);
-                const item = document.createElement("div");
-                item.className = "message-item";
-                item.innerHTML = `
-                    <div><strong>From:</strong> ${otherParticipant.name}</div>
-                    <div><strong>Last Message:</strong> ${conversation.lastMessage}</div>
-                    <div class="timestamp"><strong>Timestamp:</strong> ${new Date(conversation.lastTimestamp).toLocaleString()}</div>
+
+                const messageItem = document.createElement("div");
+                messageItem.className = "message-item";
+                messageItem.innerHTML = `
+                    <p><strong>Conversation with:</strong> ${otherParticipant.name}</p>
+                    <p><strong>Last Message:</strong> ${conversation.lastMessage}</p>
+                    <p><strong>Last Timestamp:</strong> ${new Date(conversation.lastTimestamp).toLocaleString()}</p>
+                    <button class="chat-button" onclick="redirectToChat('${conversation.chatId}')">View Chat</button>
                 `;
-                item.addEventListener("click", () => {
-                    window.location.href = `./view-omessage.html?chatId=${conversation.chatId}`;
-                });
-                messageList.appendChild(item);
+
+                messageList.appendChild(messageItem);
             }
+        }
+
+        function redirectToChat(chatId) {
+            window.location.href = `./view-omessage.html?chatId=${chatId}`;
         }
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -166,6 +178,9 @@
                 logoutLink.style.display = 'none';
             }
         }
+
+        window.redirectToChat = redirectToChat;
     </script>
 </body>
+
 </html>

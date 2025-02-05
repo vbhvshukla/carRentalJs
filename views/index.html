@@ -102,22 +102,15 @@
         import { getAllItems } from "../js/utils/dbUtils.js";
         import { checkAuth, logout } from "../js/utils/auth.js";
         import { getCookie } from "../js/utils/cookie.js";
-
         const role = getCookie("role");
-        if (role === 'owner') {
-            window.location.href = "./odashboard.html";
-        }
-
         async function updateNavLinks() {
             const isAuthenticated = await checkAuth();
-            // const myBiddingsLink = document.getElementById('my-biddings-link');
             const loginSignupLink = document.getElementById('login-signup-link');
             const logoutLink = document.getElementById('logout-link');
             const userDashboard = document.getElementById('user-dashboard-link');
 
             if (isAuthenticated) {
                 userDashboard.style.display = 'block';
-                // myBiddingsLink.style.display = 'block';
                 loginSignupLink.style.display = 'none';
                 logoutLink.style.display = 'block';
 
@@ -125,8 +118,6 @@
                 userDashboard.style.display = 'none';
                 loginSignupLink.style.display = 'block';
                 logoutLink.style.display = 'none';
-                // myBiddingsLink.style.display='none';
-
             }
         }
 
@@ -273,9 +264,6 @@
 
         async function getFilteredCars(filters) {
             const allCars = await getAllItems('cars');
-            // console.log('All Cars:', allCars);
-            console.log('Filters:', filters);
-
             const filteredCars = allCars.filter(car => {
                 const locationMatch = filters.location
                     ? filters.location.toLowerCase().split(' ').some(word => car.city?.toLowerCase().includes(word))

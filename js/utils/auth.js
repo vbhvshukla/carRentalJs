@@ -2,7 +2,6 @@ import { getCookie,setCookie } from "./cookie.js";
 function checkAuth() {
     const userId = getCookie("userId");
     if (!userId || userId == null) {
-        // window.location.href = "./views/login.html";
         return false;
     }
     return true;

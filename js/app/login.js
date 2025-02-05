@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
         const role = document.querySelector('input[name="role"]:checked')?.value;
-        if (!email || !password || !role) {
+        if (!email || !password) {
             errorMessage.textContent = 'All fields are required!';
             return;
         }
@@ -30,13 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         setCookie("username", user.username, 1);
         setCookie("userId", user.userId, 1);
-        setCookie("email", user.email, 1);
         setCookie("role", user.role, 1);
 
-        if (role === "owner") {
-            window.location.href = "./odashboard.html";
-        } else {
-            window.location.href = "./index.html";
-        }
+        window.location.href="./index.html";
     })
 })

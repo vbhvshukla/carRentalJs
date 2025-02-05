@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmPassword = document.getElementById('confirmPassword').value;
         const verificationFile = document.getElementById('verificationFile').files[0];
 
-        if (!username || !email || !password || !confirmPassword) {
+        if (!username || !email || !password || !confirmPassword || !verificationFile || !role) {
             errorMessage.textContent = 'All fields are required!';
             return;
         }

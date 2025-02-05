@@ -206,11 +206,9 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-
             if (checkAuth && userId && role == 'owner') {
                 updateNavLinks();
                 renderOwnerCars();
-                // populateCategoryOptions();
                 document.getElementById('logout-link').addEventListener('click', (event) => {
                     event.preventDefault();
                     logout();
