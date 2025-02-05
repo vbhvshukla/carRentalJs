@@ -18,9 +18,6 @@
                 <a href="./index.html">Home</a>
                 <a href="#">About Us</a>
                 <a href="#">Contact Us</a>
-                <!-- <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a> -->
-                <!-- <a href="./login.html" id="login-signup-link">Login</a> -->
-                <a href="./view-umessages.html" id="view-messages">View Messages</a>
                 <a href="#" id="logout-link">Logout</a>
             </nav>
         </div>
@@ -30,7 +27,11 @@
                 <h3>User Dashboard</h3>
                 <ul>
                     <li><a href="./udashboard.html">Dashboard</a></li>
-                    <li><a href="./mybiddings.html">My Biddings</a></li>
+
+                    <li><a href="./view-ubooking.html">View All Bookings</a></li>
+                    <li><a href="./view-umessages.html">View All Messages</a></li>
+                    <li><a href="./mybiddings.html">View All Biddings</a></li>
+
                 </ul>
             </div>
 
@@ -254,7 +255,7 @@
             });
         }
 
-        if (!checkAuth || role !== 'customer') {
+        if (!checkAuth) {
             window.location.href = "./index.html";
         }
 
