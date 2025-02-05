@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .wrap {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #0d7963;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header .logo img {
+            height: 60px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #ffc107;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chat-messages {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #e9ecef;
+        }
+
+        .chat-message img {
+            max-width: 100%;
+            max-height: 200px;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .chat-input input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .chat-input input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .chat-input button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .chat-input button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <img src="../assets/images/logo.png" alt="Logo">
+            </div>
+            <nav class="nav-links">
+                <a href="./index.html">Home</a>
+                <a href="#">About Us</a>
+                <a href="#">Contact Us</a>
+                <a href="./mybiddings.html">My Biddings</a>
+                <a href="./login.html" id="login-signup-link">Login</a>
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <h2>Conversation</h2>
+            <div id="chat-messages" class="chat-messages"></div>
+
+            <div class="chat-input">
+                <input type="text" id="chat-message-input" placeholder="Type a message">
+                <input type="file" id="chat-file-input" accept="image/*,video/*,application/pdf">
+                <button id="send-chat-message-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getAllItemsByIndex, getItemByKey, addItem, updateItem } from "../js/utils/dbUtils.js";
+        import { getCookie } from "../js/utils/cookie.js";
+        import { checkAuth, logout } from "../js/utils/auth.js";
+        import { generateRandomId } from "../js/utils/generateId.js";
+
+        const userId = getCookie("userId");
+        if (!userId) window.location.href = "./login.html";
+
+        function getChatIdFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('chatId');
+        }
+
+        async function renderMessages() {
+            const chatId = getChatIdFromURL();
+            const messages = await getAllItemsByIndex("messages", "chatId", chatId);
+            const messageList = document.getElementById("chat-messages");
+            messageList.innerHTML = "";
+
+            messages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            for (const message of messages) {
+                const fromUser = await getItemByKey("users", message.fromUserId);
+                const fromUserName = fromUser ? fromUser.username : message.fromUserId;
+                const item = document.createElement("div");
+                item.className = "chat-message";
+                item.innerHTML = `
+                    <div><strong>${fromUserName}:</strong> ${message.message}</div>
+                    ${message.hasAttachment ? (message.attachment.startsWith('data:image/') ? `<div><strong>Attachment:</strong> <img src="${message.attachment}" alt="Attachment"></div>` : `<div><strong>Attachment:</strong> <a href="${message.attachment}" download>Download</a></div>`) : ''}
+                    <div class="timestamp"><strong>Timestamp:</strong> ${new Date(message.createdAt).toLocaleString()}</div>
+                `;
+                messageList.appendChild(item);
+            }
+        }
+
+        async function sendMessage(chatId, fromUserId, toUserId, message, file) {
+            const newMessage = {
+                messageId: generateRandomId('msg'),
+                chatId,
+                fromUserId,
+                toUserId,
+                message,
+                createdAt: new Date().toISOString(),
+                hasAttachment: !!file,
+                attachment: file ? await readFileAsDataURL(file) : null
+            };
+
+            await addItem("messages", newMessage);
+
+            // Update conversation metadata
+            const conversation = await getItemByKey("conversations", chatId) || {
+                chatId,
+                participants: [fromUserId, toUserId],
+                lastMessage: '',
+                lastTimestamp: ''
+            };
+
+            conversation.lastMessage = message;
+            conversation.lastTimestamp = newMessage.createdAt;
+
+            await updateItem("conversations", conversation);
+        }
+
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        document.getElementById("send-chat-message-btn").addEventListener("click", async () => {
+            const messageInput = document.getElementById("chat-message-input");
+            const fileInput = document.getElementById("chat-file-input");
+            const message = messageInput.value.trim();
+            const file = fileInput.files[0];
+            if (message || file) {
+                const chatId = getChatIdFromURL();
+                const conversation = await getItemByKey("conversations", chatId);
+                const toUserId = conversation.participants.find(participantId => participantId !== userId);
+                await sendMessage(chatId, userId, toUserId, message, file);
+                messageInput.value = "";
+                fileInput.value = "";
+                renderMessages();
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderMessages();
+            updateNavLinks();
+            document.getElementById('logout-link').addEventListener('click', (event) => {
+                event.preventDefault();
+                logout();
+            });
+        });
+
+        async function updateNavLinks() {
+            const isAuthenticated = await checkAuth();
+            const loginSignupLink = document.getElementById('login-signup-link');
+            const logoutLink = document.getElementById('logout-link');
+
+            if (isAuthenticated) {
+                loginSignupLink.style.display = 'none';
+                logoutLink.style.display = 'block';
+            } else {
+                loginSignupLink.style.display = 'block';
+                logoutLink.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>

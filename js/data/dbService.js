@@ -368,9 +368,13 @@ function openDb() {
         const messageStore = db.createObjectStore("messages", {
           keyPath: "messageId",
         });
+        messageStore.createIndex("chatId", "chatId");
+        messageStore.createIndex("hasAttatchment","hasAttatchment")
         messageStore.createIndex("fromUserId", "fromUserId");
         messageStore.createIndex("toUserId", "toUserId");
         messageStore.createIndex("forBookingId", "forBookingId");
+        messageStore.createIndex("attachment", "attachment");
+
       }
 
       if (!db.objectStoreNames.contains("bids")) {

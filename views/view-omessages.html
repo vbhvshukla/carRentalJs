@@ -133,12 +133,12 @@
                 const item = document.createElement("div");
                 item.className = "message-item";
                 item.innerHTML = `
-                    <div><strong>Participant:</strong> ${otherParticipant.name}</div>
+                    <div><strong>From:</strong> ${otherParticipant.name}</div>
                     <div><strong>Last Message:</strong> ${conversation.lastMessage}</div>
                     <div class="timestamp"><strong>Timestamp:</strong> ${new Date(conversation.lastTimestamp).toLocaleString()}</div>
                 `;
                 item.addEventListener("click", () => {
-                    window.location.href = `./chat.html?chatId=${conversation.chatId}`;
+                    window.location.href = `./view-omessage.html?chatId=${conversation.chatId}`;
                 });
                 messageList.appendChild(item);
             }

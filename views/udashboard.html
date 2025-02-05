@@ -20,6 +20,7 @@
                 <a href="#">Contact Us</a>
                 <!-- <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a> -->
                 <!-- <a href="./login.html" id="login-signup-link">Login</a> -->
+                <a href="./view-umessages.html" id="view-messages">View Messages</a>
                 <a href="#" id="logout-link">Logout</a>
             </nav>
         </div>
@@ -64,11 +65,12 @@
             const myBiddingsLink = document.getElementById('my-biddings-link');
             const loginSignupLink = document.getElementById('login-signup-link');
             const logoutLink = document.getElementById('logout-link');
-
+            const viewMessages = document.getElementById('view-messages');
             if (isAuthenticated) {
                 myBiddingsLink.style.display = 'block';
                 loginSignupLink.style.display = 'none';
                 logoutLink.style.display = 'block';
+                viewMessages.style.display = 'block';
             } else {
                 myBiddingsLink.style.display = 'none';
                 loginSignupLink.style.display = 'block';

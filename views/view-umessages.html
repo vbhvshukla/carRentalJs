@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Biddings</title>
+    <title>User Conversations</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -56,46 +56,30 @@
             gap: 20px;
         }
 
-        .bidding-list {
+        .message-list {
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
-        .bid-item {
+        .message-item {
             padding: 10px;
             border-bottom: 1px solid #ccc;
         }
 
-        .bid-item:last-child {
+        .message-item:last-child {
             border-bottom: none;
         }
 
-        .bid-item .status-pending {
-            color: orange;
-        }
-
-        .bid-item .status-approved {
-            color: green;
-        }
-
-        .bid-item .status-rejected {
-            color: red;
-        }
-
-        .chat-button {
-            background-color: #007bff;
-            color: white;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
+        .message-item:hover {
+            background-color: #f1f1f1;
             cursor: pointer;
-            margin-top: 10px;
         }
 
-        .chat-button:hover {
-            background-color: #0056b3;
+        .message-item .timestamp {
+            font-size: 0.9em;
+            color: #888;
         }
     </style>
 </head>
@@ -117,71 +101,51 @@
         </div>
 
         <div class="main">
-            <h2>My Biddings</h2>
-            <div id="bidding-list" class="bidding-list"></div>
+            <h2>All Conversations</h2>
+            <div id="message-list" class="message-list"></div>
         </div>
     </div>
 
     <script type="module">
-        import { getAllItemsByIndex, getItemByKey, updateItem } from "../js/utils/dbUtils.js";
+        import { getAllItemsByIndex, getItemByKey } from "../js/utils/dbUtils.js";
         import { getCookie } from "../js/utils/cookie.js";
         import { checkAuth, logout } from "../js/utils/auth.js";
 
         const userId = getCookie("userId");
         if (!userId) window.location.href = "./login.html";
 
-        async function loadBiddingHistory() {
-            try {
-                const bids = await getAllItemsByIndex("bids", "userId", userId);
-                const biddingList = document.getElementById("bidding-list");
-                biddingList.innerHTML = "";
+        async function getUserNames(participants) {
+            const userNames = await Promise.all(participants.map(async (participantId) => {
+                const user = await getItemByKey("users", participantId);
+                return user ? { id: participantId, name: user.username } : { id: participantId, name: participantId };
+            }));
+            return userNames;
+        }
 
-                bids.forEach(bid => {
-                    const bidItem = document.createElement("div");
-                    bidItem.className = "bid-item";
+        async function renderMessages() {
+            const conversations = await getAllItemsByIndex("conversations", "participants", userId);
+            const messageList = document.getElementById("message-list");
+            messageList.innerHTML = "";
 
-                    let statusClass = bid.status.toLowerCase() === "pending" ? "status-pending" :
-                        bid.status.toLowerCase() === "approved" ? "status-approved" :
-                            "status-rejected";
-
-                    const chatId = `${userId}_${bid.ownerId}_${bid.carId}`;
-
-                    bidItem.innerHTML = `
-                        <p><strong>Bid Id:</strong> ${bid.bidId}</p>
-                        <p><strong>Car:</strong> ${bid.carName}</p>
-                        <p><strong>Car Owner:</strong> ${bid.ownerName}</p>
-                        <p><strong>Bid Amount:</strong> $<span id="bid-amount-${bid.bidId}">${bid.bidAmount}</span> / day</p>
-                        <p><strong>Date Range:</strong> <span id="date-range-${bid.bidId}">${bid.from} to ${bid.to}</span></p>
-                        <p><strong>Placed At:</strong> ${bid.createdAt}</p>
-                        <p><strong>Status:</strong> <span class="${statusClass}">${bid.status}</span></p>
-                        <button class="chat-button" onclick="redirectToChat('${chatId}', '${bid.bidId}', '${bid.from}', '${bid.to}', '${bid.carName}', '${bid.ownerId}')">Chat</button>
-                    `;
-
-                    biddingList.appendChild(bidItem);
+            for (const conversation of conversations) {
+                const userNames = await getUserNames(conversation.participants);
+                const otherParticipant = userNames.find(user => user.id !== userId);
+                const item = document.createElement("div");
+                item.className = "message-item";
+                item.innerHTML = `
+                    <div><strong>Participant:</strong> ${otherParticipant.name}</div>
+                    <div><strong>Last Message:</strong> ${conversation.lastMessage}</div>
+                    <div class="timestamp"><strong>Timestamp:</strong> ${new Date(conversation.lastTimestamp).toLocaleString()}</div>
+                `;
+                item.addEventListener("click", () => {
+                    window.location.href = `./view-umessage.html?chatId=${conversation.chatId}`;
                 });
-
-            } catch (error) {
-                console.error("Error loading bidding history:", error);
+                messageList.appendChild(item);
             }
         }
 
-        function redirectToChat(chatId, bidId, startDate, endDate, carName, ownerId) {
-            const context = {
-                chatId,
-                bidId,
-                startDate,
-                endDate,
-                carName,
-                ownerId
-            };
-            // console.log(context);
-            const url = `./view-umessage.html?context=${encodeURIComponent(JSON.stringify(context))}`;
-            // console.log(url);
-            window.location.href = url;
-        }
-
         document.addEventListener("DOMContentLoaded", () => {
-            loadBiddingHistory();
+            renderMessages();
             updateNavLinks();
             document.getElementById('logout-link').addEventListener('click', (event) => {
                 event.preventDefault();
@@ -202,8 +166,6 @@
                 logoutLink.style.display = 'none';
             }
         }
-
-        window.redirectToChat = redirectToChat;
     </script>
 </body>
 

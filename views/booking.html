@@ -135,6 +135,13 @@
             background-color: #e9ecef;
         }
 
+        .chat-message img {
+            max-width: 100%;
+            max-height: 200px;
+            display: block;
+            margin-top: 10px;
+        }
+
         .chat-input {
             display: flex;
             gap: 10px;
@@ -256,15 +263,6 @@
                 <p><strong>Featured:</strong> <span id="featured"></span></p>
                 <div id="car-images"></div>
             </div>
-            <div class="chat-sidebar">
-                <div class="chat-header">Chat with Owner</div>
-                <div class="chat-messages" id="chat-messages"></div>
-                <div class="chat-input">
-                    <input type="text" id="chat-message-input" placeholder="Type a message...">
-                    <button id="send-chat-message-btn">Send</button>
-                </div>
-            </div>
-
 
             <div class="bid-form">
                 <h3>Place Your Bid</h3>
@@ -275,7 +273,9 @@
                 <div class="price-info">
                     <strong>Current Price:</strong> $<span id="current-price"></span>/day
                 </div>
-
+                <div class="price-info">
+                    <strong>Total Price:</strong> $<span id="total-price"></span>
+                </div>
                 <label for="bid-amount">Your Bid</label>
                 <input type="number" id="bid-amount" placeholder="Enter your bid" min="1" required>
                 <button id="submit-bid">Submit Bid</button>
@@ -285,6 +285,16 @@
                 <h3>Other Bids on this Car</h3>
                 <ul id="other-bids-list"></ul>
             </div>
+
+            <div class="chatbox">
+                <h3>Chat with Owner</h3>
+                <div id="chat-messages" class="chat-messages"></div>
+                <div class="chat-input">
+                    <input type="text" id="chat-message-input" placeholder="Type a message">
+                    <input type="file" id="chat-file-input" accept="image/*,video/*,application/pdf">
+                    <button id="send-chat-message-btn">Send</button>
+                </div>
+            </div>
         </div>
 
         <div class="footer">
@@ -292,234 +302,6 @@
         </div>
     </div>
 
-    <!-- <script type="module">
-        import { getItemByKey, getAllItemsByIndex, addItem, updateItem } from "../js/utils/dbUtils.js";
-        import { generateRandomId } from "../js/utils/generateId.js";
-        import { getCookie } from "../js/utils/cookie.js";
-        import { checkAuth, logout } from "../js/utils/auth.js";
-
-        const username = getCookie("username");
-        const userId = getCookie("userId");
-        const carId = getCarIdFromURL();
-        
-        if (!carId) {
-            alert("Car not found.");
-            window.location.href="./index.html";
-        }
-
-        const car = await getItemByKey("cars", carId);
-
-
-        document.getElementById("send-chat-message-btn").addEventListener("click", async () => {
-            if (!message) {
-                alert("Please enter a message.");
-                return;
-            }
-            const message = document.getElementById('message-input').value;
-            const carId = getCarIdFromURL();
-            const car = getItemByKey("cars", carId);
-            const ownerId = car.ownerId;
-            const startDate = document.getElementById("start-date");
-            const endDate = document.getElementById("end-date");
-
-            const context = {
-                carName: car.carName
-            }
-
-            if (startDate) {
-                context.startDate = startDate;
-            }
-            if (endDate) {
-                context.endDate = endDate;
-            }
-
-            const newMessage = {
-                messageId: generateRandomId(),
-                fromUserId: userId,
-                toUserId: ownerId,
-                message: message,
-                createdAt: Date.now().toISOString(),
-                forBookingId: null,
-                context: context
-            }
-
-            await addItem("messages", newMessage);
-            document.getElementById('message-input').value = "";
-
-        })
-        if (!userId) window.location.href = "./login.html";
-
-        function getCarIdFromURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('carId');
-        }
-
-        async function renderCarDetails() {
-            const carId = getCarIdFromURL();
-            if (!carId) {
-                alert("Car not found.");
-                return;
-            }
-
-            const car = await getItemByKey("cars", carId);
-            if (!car) {
-                alert("Car not found.");
-                return;
-            }
-
-            document.getElementById("car-name").textContent = car.carName;
-            document.getElementById("base-price").textContent = car.basePrice;
-            document.getElementById("car-description").textContent = car.description;
-            document.getElementById("owner-name").textContent = car.ownerName;
-            document.getElementById("car-city").textContent = car.city;
-            document.getElementById("category-name").textContent = car.categoryName;
-            document.getElementById("featured").textContent = car.featured.join(', ');
-            document.getElementById("current-price").textContent = car.basePrice;
-
-            const carImages = document.getElementById("car-images");
-            carImages.innerHTML = car.images.map(image => `<img src="${image}" alt="Car Image">`).join('');
-
-            document.getElementById("start-date").addEventListener("change", handleDateChange);
-            document.getElementById("end-date").addEventListener("change", handleDateChange);
-
-            document.getElementById("submit-bid").addEventListener("click", async () => {
-                const startDate = document.getElementById("start-date").value;
-                const endDate = document.getElementById("end-date").value;
-                const bidAmount = parseFloat(document.getElementById("bid-amount").value);
-
-                if (!startDate || !endDate || !bidAmount) {
-                    alert("Please fill all fields.");
-                    return;
-                }
-                if (new Date(startDate) >= new Date(endDate)) {
-                    alert("Start date must be before end date.");
-                    return;
-                }
-
-                const bid = {
-                    bidId: generateRandomId('bid'),
-                    userId,
-                    username,
-                    carId,
-                    carName: car.carName,
-                    ownerId: car.ownerId,
-                    ownerName: car.ownerName,
-                    bidAmount,
-                    from: startDate,
-                    to: endDate,
-                    status: "Pending",
-                    createdAt: new Date().toISOString().split('T')[0]
-                };
-
-                await addItem("bids", bid);
-                alert("Bid placed successfully!");
-                window.location.href = "./mybiddings.html";
-            });
-
-            async function handleDateChange() {
-                const startDate = document.getElementById("start-date").value;
-                const endDate = document.getElementById("end-date").value;
-
-                if (startDate && endDate && new Date(startDate) < new Date(endDate)) {
-                    const overlappingBids = await getOverlappingBids(carId, startDate, endDate);
-                    renderOverlappingBids(overlappingBids);
-                } else {
-                    document.getElementById("other-bids-list").innerHTML = "";
-                }
-            }
-
-            async function getOverlappingBids(carId, startDate, endDate) {
-                const allBids = await getAllItemsByIndex("bids", "carId", carId);
-                return allBids.filter(bid => isDateRangeOverlap(new Date(bid.from), new Date(bid.to), new Date(startDate), new Date(endDate)));
-            }
-
-            function isDateRangeOverlap(startDate1, endDate1, startDate2, endDate2) {
-                return (startDate1 <= endDate2 && endDate1 >= startDate2);
-            }
-
-            function renderOverlappingBids(bids) {
-                const otherBidsList = document.getElementById("other-bids-list");
-                otherBidsList.innerHTML = "";
-                if (bids.length === 0) {
-                    otherBidsList.innerHTML = "<li>No other bids in the selected date range.</li>";
-                    return;
-                }
-                bids.forEach(bid => {
-                    const li = document.createElement("li");
-                    li.textContent = `Bid by ${bid.username} from ${bid.from} to ${bid.to} for $${bid.bidAmount}`;
-                    otherBidsList.appendChild(li);
-                });
-            }
-
-        }
-
-        const chatId = `${userId}_${car.ownerId}_${carId}`;
-
-        document.getElementById("send-chat-message-btn").addEventListener("click", async () => {
-            const messageInput = document.getElementById("chat-message-input");
-            const message = messageInput.value.trim();
-            if (message) {
-                const startDate = document.getElementById("start-date").value;
-                const endDate = document.getElementById("end-date").value;
-                const context = `Car: ${car.carName}, Start Date: ${startDate}, End Date: ${endDate}`;
-                await sendMessage(chatId, userId, car.ownerId, context, message);
-                messageInput.value = "";
-                renderChatMessages(car.ownerId);
-            }
-        });
-
-        renderChatMessages(car.ownerId);
-
-
-        async function sendMessage(chatId, fromUserId, toUserId, context, message) {
-            const newMessage = {
-                messageId: generateRandomId('msg'),
-                chatId,
-                fromUserId,
-                toUserId,
-                context,
-                message,
-                createdAt: new Date().toISOString()
-            };
-
-            await addItem("messages", newMessage);
-        }
-
-        async function renderChatMessages(ownerId) {
-            const allMessages = await getAllItemsByIndex("messages", "toUserId", ownerId);
-            const chatMessagesContainer = document.getElementById("chat-messages");
-            chatMessagesContainer.innerHTML = "";
-            allMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).forEach(msg => {
-                const messageElement = document.createElement("div");
-                messageElement.className = "chat-message";
-                messageElement.textContent = `${msg.fromUserId === userId ? 'You' : 'Owner'}: ${msg.message}`;
-                chatMessagesContainer.appendChild(messageElement);
-            });
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            renderCarDetails();
-            updateNavLinks();
-            document.getElementById('logout-link').addEventListener('click', (event) => {
-                event.preventDefault();
-                logout();
-            });
-        });
-
-        async function updateNavLinks() {
-            const isAuthenticated = await checkAuth();
-            const loginSignupLink = document.getElementById('login-signup-link');
-            const logoutLink = document.getElementById('logout-link');
-
-            if (isAuthenticated) {
-                loginSignupLink.style.display = 'none';
-                logoutLink.style.display = 'block';
-            } else {
-                loginSignupLink.style.display = 'block';
-                logoutLink.style.display = 'none';
-            }
-        }
-    </script> -->
     <script type="module">
         import { getItemByKey, getAllItemsByIndex, addItem, updateItem } from "../js/utils/dbUtils.js";
         import { generateRandomId } from "../js/utils/generateId.js";
@@ -527,7 +309,6 @@
         import { checkAuth, logout } from "../js/utils/auth.js";
 
         const userId = getCookie("userId");
-        const username = getCookie("username");
         if (!userId) window.location.href = "./login.html";
 
         function getCarIdFromURL() {
@@ -539,7 +320,7 @@
             const carId = getCarIdFromURL();
             if (!carId) {
                 alert("Car not found.");
-                window.location.href="./index.html";
+                return;
             }
 
             const car = await getItemByKey("cars", carId);
@@ -580,7 +361,7 @@
                 const bid = {
                     bidId: generateRandomId('bid'),
                     userId,
-                    username,
+                    username: getCookie("username"),
                     carId,
                     carName: car.carName,
                     ownerId: car.ownerId,
@@ -632,18 +413,17 @@
                 });
             }
 
-            // Initialize chat
             const chatId = `${userId}_${car.ownerId}_${carId}`;
 
             document.getElementById("send-chat-message-btn").addEventListener("click", async () => {
                 const messageInput = document.getElementById("chat-message-input");
+                const fileInput = document.getElementById("chat-file-input");
                 const message = messageInput.value.trim();
-                if (message) {
-                    const startDate = document.getElementById("start-date").value;
-                    const endDate = document.getElementById("end-date").value;
-                    const context = `Car: ${car.carName}, Start Date: ${startDate}, End Date: ${endDate}`;
-                    await sendMessage(chatId, userId, car.ownerId, context, message);
+                const file = fileInput.files[0];
+                if (message || file) {
+                    await sendMessage(chatId, userId, car.ownerId, message, file);
                     messageInput.value = "";
+                    fileInput.value = "";
                     renderChatMessages(car.ownerId);
                 }
             });
@@ -651,21 +431,20 @@
             renderChatMessages(car.ownerId);
         }
 
-        async function sendMessage(chatId, fromUserId, toUserId, context, message) {
+        async function sendMessage(chatId, fromUserId, toUserId, message, file) {
             const newMessage = {
                 messageId: generateRandomId('msg'),
                 chatId,
                 fromUserId,
-                carId,
                 toUserId,
-                context,
                 message,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                hasAttachment: !!file,
+                attachment: file ? await readFileAsDataURL(file) : null
             };
 
             await addItem("messages", newMessage);
 
-            // Update conversation metadata
             const conversation = await getItemByKey("conversations", chatId) || {
                 chatId,
                 participants: [fromUserId, toUserId],
@@ -679,14 +458,30 @@
             await updateItem("conversations", conversation);
         }
 
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
         async function renderChatMessages(ownerId) {
-            const allMessages = await getAllItemsByIndex("messages", "toUserId", ownerId);
+            const allMessages = await getAllItemsByIndex("messages", "chatId", `${userId}_${ownerId}_${getCarIdFromURL()}`);
             const chatMessagesContainer = document.getElementById("chat-messages");
             chatMessagesContainer.innerHTML = "";
-            allMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).forEach(msg => {
+
+            allMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            allMessages.forEach(msg => {
                 const messageElement = document.createElement("div");
                 messageElement.className = "chat-message";
-                messageElement.textContent = `${msg.fromUserId === userId ? 'You' : 'Owner'}: ${msg.message}`;
+                messageElement.innerHTML = `
+                    <div><strong>${msg.fromUserId === userId ? 'You' : 'Owner'}:</strong> ${msg.message}</div>
+                    ${msg.hasAttachment ? (msg.attachment.startsWith('data:image/') ? `<div><strong>Attachment:</strong> <img src="${msg.attachment}" alt="Attachment"></div>` : `<div><strong>Attachment:</strong> <a href="${msg.attachment}" download>Download</a></div>`) : ''}
+                    <div class="timestamp"><strong>Timestamp:</strong> ${new Date(msg.createdAt).toLocaleString()}</div>
+                `;
                 chatMessagesContainer.appendChild(messageElement);
             });
         }
