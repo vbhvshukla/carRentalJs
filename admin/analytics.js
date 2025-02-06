@@ -1,91 +1,148 @@
 import { getTotalItems, getAllItems, getItemByKey } from "../js/utils/dbUtils.js";
 import { checkAuth, logout } from "../js/utils/auth.js";
 
-async function getHighestBid() {
-    const bids = await getAllItems("bids");
-    if (bids.length === 0) return 0;
-    return Math.max(...bids.map(bid => bid.bidAmount));
-}
-
-async function getMostPopularCarByBids() {
-    const bids = await getAllItems("bids");
-    if (bids.length === 0) return "N/A";
-    const carBids = bids.reduce((acc, bid) => {
-        acc[bid.carId] = (acc[bid.carId] || 0) + 1;
-        return acc;
-    }, {});
-    const mostPopularCarId = Object.keys(carBids).reduce((a, b) => carBids[a] > carBids[b] ? a : b);
-    const car = await getItemByKey("cars", mostPopularCarId);
-    return car ? car.carName : "N/A";
-}
-
-async function getMostPopularUserByRating() {
-    const users = await getAllItems("users");
-    if (users.length === 0) return "N/A";
-    const mostPopularUser = users.reduce((a, b) => (a.avgRating || 0) > (b.avgRating || 0) ? a : b);
-    return mostPopularUser.username;
-}
-
-async function getMostPopularCategory() {
-    const categories = await getAllItems("categories");
-    if (categories.length === 0) return "N/A";
+async function getNumberOfCarsPerCategory() {
     const cars = await getAllItems("cars");
-    const categoryCounts = cars.reduce((acc, car) => {
-        acc[car.categoryId] = (acc[car.categoryId] || 0) + 1;
+    const categories = await getAllItems("categories");
+    const categoryCounts = categories.map(category => ({
+        categoryName: category.categoryName,
+        count: cars.filter(car => car.categoryId === category.categoryId).length
+    }));
+    return categoryCounts;
+}
+
+async function getNumberOfAvailableCars() {
+    const cars = await getAllItems("cars");
+    return cars.filter(car => car.availability === "available").length;
+}
+
+async function getHighestNumberOfCarsAmongUsers() {
+    const cars = await getAllItems("cars");
+    const userCarCounts = cars.reduce((acc, car) => {
+        acc[car.ownerId] = (acc[car.ownerId] || 0) + 1;
         return acc;
     }, {});
-    const mostPopularCategoryId = Object.keys(categoryCounts).reduce((a, b) => categoryCounts[a] > categoryCounts[b] ? a : b);
-    const category = await getItemByKey("categories", mostPopularCategoryId);
-    return category ? category.categoryName : "N/A";
+    const highestUserId = Object.keys(userCarCounts).reduce((a, b) => userCarCounts[a] > userCarCounts[b] ? a : b);
+    const user = await getItemByKey("users", highestUserId);
+    return { username: user.username, count: userCarCounts[highestUserId] };
 }
 
-async function getAverageBidPrice() {
+async function getHighestRatedCarCategoryWise() {
+    const cars = await getAllItems("cars");
+    const categories = await getAllItems("categories");
+    const highestRatedCars = categories.map(category => {
+        const carsInCategory = cars.filter(car => car.categoryId === category.categoryId);
+        const highestRatedCar = carsInCategory.reduce((a, b) => (a.avgRating || 0) > (b.avgRating || 0) ? a : b, {});
+        return { categoryName: category.categoryName, carName: highestRatedCar.carName, rating: highestRatedCar.avgRating };
+    });
+    return highestRatedCars;
+}
+
+async function getHighestRatedUserWithNumberOfUsersPerRating() {
+    const users = await getAllItems("users");
+    const highestRatedUser = users.reduce((a, b) => (a.avgRating || 0) > (b.avgRating || 0) ? a : b, {});
+    const usersPerRating = [1, 2, 3, 4, 5].map(rating => ({
+        rating,
+        count: users.filter(user => user.avgRating === rating).length
+    }));
+    return { highestRatedUser: highestRatedUser.username, usersPerRating };
+}
+
+async function getTotalNumberOfBids() {
     const bids = await getAllItems("bids");
-    if (bids.length === 0) return 0;
-    const totalBidPrice = bids.reduce((acc, bid) => acc + bid.bidAmount, 0);
-    return (totalBidPrice / bids.length).toFixed(2);
+    return bids.length;
 }
 
-async function getTotalUsers() {
-    return await getTotalItems("users");
+async function getBidsPerCategory() {
+    const bids = await getAllItems("bids");
+    const cars = await getAllItems("cars");
+    const categories = await getAllItems("categories");
+    const bidsPerCategory = categories.map(category => ({
+        categoryName: category.categoryName,
+        count: bids.filter(bid => cars.find(car => car.carId === bid.carId && car.categoryId === category.categoryId)).length
+    }));
+    return bidsPerCategory;
 }
 
-async function getTotalCars() {
-    return await getTotalItems("cars");
+async function getCarsBookedAutomaticOrManual() {
+    const bookings = await getAllItems("bookings");
+    const cars = await getAllItems("cars");
+    const automaticCount = bookings.filter(booking => cars.find(car => car.carId === booking.carId && car.carType === "automatic")).length;
+    const manualCount = bookings.filter(booking => cars.find(car => car.carId === booking.carId && car.carType === "manual")).length;
+    return { automatic: automaticCount, manual: manualCount };
 }
 
-async function getTotalCategories() {
-    return await getTotalItems("categories");
+async function getHighestNumberOfBookingsPerCategory() {
+    const bookings = await getAllItems("bookings");
+    const cars = await getAllItems("cars");
+    const categories = await getAllItems("categories");
+    const bookingsPerCategory = categories.map(category => ({
+        categoryName: category.categoryName,
+        count: bookings.filter(booking => cars.find(car => car.carId === booking.carId && car.categoryId === category.categoryId)).length
+    }));
+    const highestCategory = bookingsPerCategory.reduce((a, b) => a.count > b.count ? a : b, {});
+    return highestCategory;
 }
 
-async function getTotalBookings() {
-    return await getTotalItems("bookings");
+async function getTotalBiddedPricePerCategory() {
+    const bookings = await getAllItems("bookings");
+    const cars = await getAllItems("cars");
+    const categories = await getAllItems("categories");
+
+    const revenuePerCategory = categories.map(category => ({
+        categoryName: category.categoryName,
+        totalRevenue: bookings.reduce((acc, booking) => {
+            const car = cars.find(car => car.carId === booking.carId && car.categoryId === category.categoryId);
+            if (car) {
+                const startDate = new Date(booking.from);
+                const endDate = new Date(booking.to);
+                const days = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
+                acc += car.basePrice * days;
+            }
+            return acc;
+        }, 0)
+    }));
+
+    return revenuePerCategory;
 }
 
-async function getTotalMessages() {
-    return await getTotalItems("messages");
+async function getCarsPerCity() {
+    const cars = await getAllItems("cars");
+
+    const carsPerCity = cars.reduce((acc, car) => {
+        if (!acc[car.city]) {
+            acc[car.city] = 0;
+        }
+        acc[car.city]++;
+        return acc;
+    }, {});
+
+    return Object.keys(carsPerCity).map(city => ({
+        city,
+        count: carsPerCity[city]
+    }));
 }
 
 async function loadAnalytics() {
-    const highestBid = await getHighestBid();
-    const mostPopularCar = await getMostPopularCarByBids();
-    const mostPopularUser = await getMostPopularUserByRating();
-    const mostPopularCategory = await getMostPopularCategory();
-    const averageBidPrice = await getAverageBidPrice();
-    const totalUsers = await getTotalUsers();
-    const totalCars = await getTotalCars();
-    const totalCategories = await getTotalCategories();
-    const totalBookings = await getTotalBookings();
-    const totalMessages = await getTotalMessages();
-
-    // Highest Bid Chart (Bar Chart)
-    new Chart(document.getElementById('highestBidChart'), {
+    const numberOfCarsPerCategory = await getNumberOfCarsPerCategory();
+    const numberOfAvailableCars = await getNumberOfAvailableCars();
+    const highestNumberOfCarsAmongUsers = await getHighestNumberOfCarsAmongUsers();
+    const highestRatedCarCategoryWise = await getHighestRatedCarCategoryWise();
+    const highestRatedUserWithNumberOfUsersPerRating = await getHighestRatedUserWithNumberOfUsersPerRating();
+    const totalNumberOfBids = await getTotalNumberOfBids();
+    const bidsPerCategory = await getBidsPerCategory();
+    const carsBookedAutomaticOrManual = await getCarsBookedAutomaticOrManual();
+    const highestNumberOfBookingsPerCategory = await getHighestNumberOfBookingsPerCategory();
+    const totalBiddedPricePerCategory = await getTotalBiddedPricePerCategory();
+    const carsPerCity = await getCarsPerCity();
+   
+    new Chart(document.getElementById('carsPerCategoryChart'), {
         type: 'bar',
         data: {
-            labels: ['Highest Bid'],
+            labels: numberOfCarsPerCategory.map(item => item.categoryName),
             datasets: [{
-                label: 'Highest Bid',
-                data: [highestBid],
+                label: 'Number of Cars Category wise',
+                data: numberOfCarsPerCategory.map(item => item.count),
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1
@@ -100,44 +157,13 @@ async function loadAnalytics() {
         }
     });
 
-    // Most Popular Car Chart (Pie Chart)
-    new Chart(document.getElementById('popularCarChart'), {
-        type: 'pie',
+    new Chart(document.getElementById('highestRatedCarCategoryWiseChart'), {
+        type: 'bar',
         data: {
-            labels: ['Most Popular Car'],
+            labels: highestRatedCarCategoryWise.map(item => item.categoryName),
             datasets: [{
-                label: 'Most Popular Car',
-                data: [mostPopularCar],
-                backgroundColor: ['rgba(153, 102, 255, 0.2)'],
-                borderColor: ['rgba(153, 102, 255, 1)'],
-                borderWidth: 1
-            }]
-        }
-    });
-
-    // Most Popular User Chart (Doughnut Chart)
-    new Chart(document.getElementById('popularUserChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Most Popular User'],
-            datasets: [{
-                label: 'Most Popular User',
-                data: [mostPopularUser],
-                backgroundColor: ['rgba(255, 159, 64, 0.2)'],
-                borderColor: ['rgba(255, 159, 64, 1)'],
-                borderWidth: 1
-            }]
-        }
-    });
-
-    // Most Popular Category Chart (Line Chart)
-    new Chart(document.getElementById('popularCategoryChart'), {
-        type: 'line',
-        data: {
-            labels: ['Most Popular Category'],
-            datasets: [{
-                label: 'Most Popular Category',
-                data: [mostPopularCategory],
+                label: 'Highest Rated Car Per Category',
+                data: highestRatedCarCategoryWise.map(item => item.rating),
                 backgroundColor: 'rgba(255, 206, 86, 0.2)',
                 borderColor: 'rgba(255, 206, 86, 1)',
                 borderWidth: 1
@@ -152,14 +178,34 @@ async function loadAnalytics() {
         }
     });
 
-    // Average Bid Price Chart (Bar Chart)
-    new Chart(document.getElementById('averageBidPriceChart'), {
+    new Chart(document.getElementById('bidsPerCategoryChart'), {
         type: 'bar',
         data: {
-            labels: ['Average Bid Price'],
+            labels: bidsPerCategory.map(item => item.categoryName),
             datasets: [{
-                label: 'Average Bid Price',
-                data: [averageBidPrice],
+                label: 'Number of Bids Per Category',
+                data: bidsPerCategory.map(item => item.count),
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('totalBookingRevenueChart'), {
+        type: 'bar',
+        data: {
+            labels: totalBiddedPricePerCategory.map(item => item.categoryName),
+            datasets: [{
+                label: 'Bid Revenue Per Category',
+                data: totalBiddedPricePerCategory.map(item => item.totalRevenue),
                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
                 borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1
@@ -173,103 +219,34 @@ async function loadAnalytics() {
             }
         }
     });
-
-    // Total Users Chart (Bar Chart)
-    new Chart(document.getElementById('totalUsersChart'), {
-        type: 'bar',
-        data: {
-            labels: ['Total Users'],
-            datasets: [{
-                label: 'Total Users',
-                data: [totalUsers],
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                borderColor: 'rgba(255, 99, 132, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-
-    // Total Cars Chart (Line Chart)
-    new Chart(document.getElementById('totalCarsChart'), {
-        type: 'line',
-        data: {
-            labels: ['Total Cars'],
-            datasets: [{
-                label: 'Total Cars',
-                data: [totalCars],
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-
-    // Total Categories Chart (Pie Chart)
-    new Chart(document.getElementById('totalCategoriesChart'), {
+    new Chart(document.getElementById('carsPerCityChart'), {
         type: 'pie',
         data: {
-            labels: ['Total Categories'],
+            labels: carsPerCity.map(item => item.city),
             datasets: [{
-                label: 'Total Categories',
-                data: [totalCategories],
-                backgroundColor: ['rgba(153, 102, 255, 0.2)'],
-                borderColor: ['rgba(153, 102, 255, 1)'],
-                borderWidth: 1
-            }]
-        }
-    });
-
-    // Total Bookings Chart (Doughnut Chart)
-    new Chart(document.getElementById('totalBookingsChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Total Bookings'],
-            datasets: [{
-                label: 'Total Bookings',
-                data: [totalBookings],
-                backgroundColor: ['rgba(255, 159, 64, 0.2)'],
-                borderColor: ['rgba(255, 159, 64, 1)'],
-                borderWidth: 1
-            }]
-        }
-    });
-
-    // Total Messages Chart (Bar Chart)
-    new Chart(document.getElementById('totalMessagesChart'), {
-        type: 'bar',
-        data: {
-            labels: ['Total Messages'],
-            datasets: [{
-                label: 'Total Messages',
-                data: [totalMessages],
-                backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                borderColor: 'rgba(255, 206, 86, 1)',
+                label: 'City Wise Cars',
+                data: carsPerCity.map(item => item.count),
+                backgroundColor: carsPerCity.map((_, index) => `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.2)`),
+                borderColor: carsPerCity.map((_, index) => `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 1)`),
                 borderWidth: 1
             }]
         },
         options: {
-            scales: {
-                y: {
-                    beginAtZero: true
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const total = context.dataset.data.reduce((acc, value) => acc + value, 0);
+                            const percentage = ((context.raw / total) * 100).toFixed(2);
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
                 }
             }
         }
     });
 }
+
 
 document.addEventListener("DOMContentLoaded", () => {
     loadAnalytics();

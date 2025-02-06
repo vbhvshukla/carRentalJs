@@ -153,6 +153,7 @@
             </div>
             <nav class="nav-links">
                 <a href="./login.html" id="login-signup-link">Login</a>
+                <a href="./analytics.html" id="analytics-link">Analytics</a>
                 <a href="#" id="logout-link">Logout</a>
             </nav>
         </div>
@@ -168,6 +169,7 @@
                             <th>Email</th>
                             <th>Role</th>
                             <th>Rating</th>
+                            <th>Rating Count</th>
                             <th>Approved</th>
                             <th>Actions</th>
                         </tr>
@@ -188,6 +190,8 @@
                             <th>Owner</th>
                             <th>City</th>
                             <th>Base Price</th>
+                            <th>Rating</th>
+                            <th>Rating Count</th>
                             <th>Available</th>
                             <th>Actions</th>
                         </tr>
@@ -213,11 +217,7 @@
                 </table>
             </div>
 
-            <div class="section">
-                <h2>Analytics</h2>
-                <div id="analytics">
-                </div>
-            </div>
+           
         </div>
     </div>
 
@@ -266,6 +266,20 @@
         </div>
     </div>
 
+    <div id="change-rating-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('change-rating-modal')">&times;</span>
+            <h2>Change Rating</h2>
+            <form id="change-rating-form">
+                <label for="new-rating">New Rating</label>
+                <input type="number" id="new-rating" min="0" max="5" step="0.1" required>
+                <label for="new-rating-count">New Rating Count</label>
+                <input type="number" id="new-rating-count" min="0" required>
+                <button type="submit" class="button">Update Rating</button>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { getTotalItems, getAllItems, getItemByKey, updateItem, deleteItem, addItem, getItemsWithPagination } from "../js/utils/dbUtils.js";
         import { getCookie } from "../js/utils/cookie.js";
@@ -294,9 +308,11 @@
                     <td>${user.email}</td>
                     <td>${user.role}</td>
                     <td>${user.rating || "N/A"}</td>
+                    <td>${user.ratingCount || 0}</td>
                     <td>${user.isApproved ? "Yes" : "No"}</td>
                     <td>
                         <button class="button" onclick="showUserApprovalModal('${user.userId}')">Approve/Invalidate</button>
+                        <button class="button" onclick="showChangeRatingModal('users', '${user.userId}', ${user.rating || 0}, ${user.ratingCount || 0})">Change Rating</button>
                         <button class="button button-danger" onclick="deleteUser('${user.userId}')">Delete</button>
                     </td>
                 `;
@@ -312,11 +328,16 @@
             cars.forEach(car => {
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td>${car.name}</td>
-                    <td>${car.category}</td>
+                    <td>${car.carName}</td>
+                    <td>${car.categoryName}</td>
                     <td>${car.ownerName}</td>
-                    <td>${car.isAvailable ? "Yes" : "No"}</td>
+                    <td>${car.city}</td>
+                    <td>${car.basePrice}</td>
+                    <td>${car.rating || "N/A"}</td>
+                    <td>${car.ratingCount || 0}</td>
+                    <td>${car.availability ? "Yes" : "No"}</td>
                     <td>
+                        <button class="button" onclick="showChangeRatingModal('cars', '${car.carId}', ${car.rating || 0}, ${car.ratingCount || 0})">Change Rating</button>
                         <button class="button button-danger" onclick="deleteCar('${car.carId}')">Delete</button>
                     </td>
                 `;
@@ -447,6 +468,15 @@
             modal.style.display = "block";
         }
 
+        function showChangeRatingModal(type, id, currentRating, currentRatingCount) {
+            const modal = document.getElementById("change-rating-modal");
+            document.getElementById("new-rating").value = currentRating;
+            document.getElementById("new-rating-count").value = currentRatingCount;
+            modal.setAttribute("data-type", type);
+            modal.setAttribute("data-id", id);
+            modal.style.display = "block";
+        }
+
         document.getElementById("add-user-form").addEventListener("submit", async (event) => {
             event.preventDefault();
             const username = document.getElementById("username").value.trim();
@@ -478,13 +508,34 @@
             }
         });
 
+        document.getElementById("change-rating-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const newRating = parseFloat(document.getElementById("new-rating").value);
+            const newRatingCount = parseInt(document.getElementById("new-rating-count").value);
+            const modal = document.getElementById("change-rating-modal");
+            const type = modal.getAttribute("data-type");
+            const id = modal.getAttribute("data-id");
+
+            const item = await getItemByKey(type, id);
+            item.avgRating = newRating;
+            item.ratingCount = newRatingCount;
+            await updateItem(type, item);
+
+            closeModal("change-rating-modal");
+            if (type === "users") {
+                loadUsers();
+            } else if (type === "cars") {
+                loadCars();
+            }
+        });
+
         document.addEventListener("DOMContentLoaded", () => {
             // loadUsers();
             // loadCars();
             loadUsersWithPagination();
             loadCarsWithPagination();
             loadCategories();
-            loadAnalytics();
+            // loadAnalytics();
             updateNavLinks();
             document.getElementById('logout-link').addEventListener('click', (event) => {
                 event.preventDefault();
@@ -519,9 +570,11 @@
             <td>${car.ownerName}</td>
                         <td>${car.city}</td>
             <td>${car.basePrice}</td>
-
+            <td>${car.rating || "N/A"}</td>
+            <td>${car.ratingCount || 0}</td>
             <td>${car.availability ? "Yes" : "No"}</td>
             <td>
+                <button class="button" onclick="showChangeRatingModal('cars', '${car.carId}', ${car.rating || 0}, ${car.ratingCount || 0})">Change Rating</button>
                 <button class="button button-danger" onclick="deleteCar('${car.carId}')">Delete</button>
             </td>
         `;
@@ -543,9 +596,11 @@
             <td>${user.email}</td>
             <td>${user.role}</td>
             <td>${user.rating || "N/A"}</td>
+            <td>${user.ratingCount || 0}</td>
             <td>${user.isApproved ? "Yes" : "No"}</td>
             <td>
                 <button class="button" onclick="showUserApprovalModal('${user.userId}')">Approve/Invalidate</button>
+                <button class="button" onclick="showChangeRatingModal('users', '${user.userId}', ${user.rating || 0}, ${user.ratingCount || 0})">Change Rating</button>
                 <button class="button button-danger" onclick="deleteUser('${user.userId}')">Delete</button>
             </td>
         `;
@@ -587,6 +642,7 @@
         window.deleteCategory = deleteCategory;
         window.showAddCategoryModal = showAddCategoryModal;
         window.showAddUserModal = showAddUserModal;
+        window.showChangeRatingModal = showChangeRatingModal;
     </script>
 </body>
 

@@ -67,12 +67,21 @@
             margin-top: 0;
         }
 
+        .chart-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
         .chart-container {
-            width: 100%;
+            flex: 1;
+            min-width: 45%;
             height: 400px;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+     <srcipt src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></srcipt>
+
 </head>
 
 <body>
@@ -90,35 +99,26 @@
         <div class="main">
             <div class="section">
                 <h2>Analytics</h2>
-                <div class="chart-container">
-                    <canvas id="highestBidChart"></canvas>
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <canvas id="carsPerCategoryChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="highestRatedCarCategoryWiseChart"></canvas>
+                    </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="popularCarChart"></canvas>
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <canvas id="bidsPerCategoryChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="totalBookingRevenueChart"></canvas>
+                    </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="popularUserChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="popularCategoryChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="averageBidPriceChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="totalUsersChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="totalCarsChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="totalCategoriesChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="totalBookingsChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="totalMessagesChart"></canvas>
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <canvas id="carsPerCityChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -127,4 +127,4 @@
     <script type="module" src="./analytics.js"></script>
 </body>
 
-</html> 
+</html>

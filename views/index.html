@@ -19,6 +19,7 @@
                 <a href="#" id="contact-us-link">Contact Us</a>
                 <!-- <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a> -->
                 <a href="./udashboard.html" id="user-dashboard-link">User Dashboard</a>
+                <a href="./odashboard.html" id="owner-dashboard-link">Owner Dashboard</a>
                 <a href="./login.html" id="login-signup-link">Login</a>
                 <a href="#" id="logout-link">Logout</a>
             </nav>
@@ -99,23 +100,35 @@
     </div>
 
     <script type="module">
-        import { getAllItems } from "../js/utils/dbUtils.js";
+        import { getAllItems, getItemByKey } from "../js/utils/dbUtils.js";
         import { checkAuth, logout } from "../js/utils/auth.js";
         import { getCookie } from "../js/utils/cookie.js";
-        const role = getCookie("role");
+
         async function updateNavLinks() {
             const isAuthenticated = await checkAuth();
             const loginSignupLink = document.getElementById('login-signup-link');
             const logoutLink = document.getElementById('logout-link');
             const userDashboard = document.getElementById('user-dashboard-link');
+            const ownerDashboard = document.getElementById('owner-dashboard-link');
 
             if (isAuthenticated) {
                 userDashboard.style.display = 'block';
                 loginSignupLink.style.display = 'none';
                 logoutLink.style.display = 'block';
 
+                const userId = getCookie("userId");
+                const user = await getItemByKey("users", userId);
+                const role = user.role;
+                const isApproved = user.isApproved;
+
+                if (role === "owner" && isApproved) {
+                    ownerDashboard.style.display = 'block';
+                } else {
+                    ownerDashboard.style.display = 'none';
+                }
             } else {
                 userDashboard.style.display = 'none';
+                ownerDashboard.style.display = 'none';
                 loginSignupLink.style.display = 'block';
                 logoutLink.style.display = 'none';
             }
