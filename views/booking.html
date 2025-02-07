@@ -244,9 +244,7 @@
             </div>
             <nav class="nav-links">
                 <a href="./index.html">Home</a>
-                <a href="#">About Us</a>
-                <a href="#">Contact Us</a>
-                <a href="./mybiddings.html">My Biddings</a>
+              <a href="./udashboard.html">Dashboard</a>
                 <a href="./login.html" id="login-signup-link">Login</a>
                 <a href="#" id="logout-link">Logout</a>
             </nav>
@@ -266,19 +264,26 @@
 
             <div class="bid-form">
                 <h3>Place Your Bid</h3>
-                <label for="start-date">Start Date</label>
-                <input type="date" id="start-date" required>
-                <label for="end-date">End Date</label>
-                <input type="date" id="end-date" required>
-                <div class="price-info">
-                    <strong>Current Price:</strong> $<span id="current-price"></span>/day
-                </div>
-                <div class="price-info">
-                    <strong>Total Price:</strong> $<span id="total-price"></span>
-                </div>
-                <label for="bid-amount">Your Bid</label>
-                <input type="number" id="bid-amount" placeholder="Enter your bid" min="1" required>
-                <button id="submit-bid">Submit Bid</button>
+                <form id="bid-form">
+                    <label for="start-date">Start Date</label>
+                    <input type="date" id="start-date" name="start-date" required>
+                    
+                    <label for="end-date">End Date</label>
+                    <input type="date" id="end-date" name="end-date" required>
+                    
+                    <div class="price-info">
+                        <strong>Current Price:</strong> $<span id="current-price"></span>/day
+                    </div>
+                    
+                    <div class="price-info">
+                        <strong>Total Price:</strong> $<span id="total-price"></span>
+                    </div>
+                    
+                    <label for="bid-amount">Your Bid</label>
+                    <input type="number" id="bid-amount" name="bid-amount" placeholder="Enter your bid" min="1" required>
+                    
+                    <button type="submit" id="submit-bid">Submit Bid</button>
+                </form>
             </div>
 
             <div class="other-bids">

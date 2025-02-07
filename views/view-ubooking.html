@@ -143,7 +143,7 @@
                         <p><strong>Booking Id:</strong> ${booking.bookingId}</p>
                         <p><strong>Car:</strong> ${booking.carName}</p>
                         <p><strong>Car Owner:</strong> ${booking.ownerName}</p>
-                        <p><strong>Booking Amount:</strong> $<span id="booking-amount-${booking.bookingId}">${booking.bookingAmount}</span></p>
+                        <p><strong>Booking Amount:</strong> $<span id="booking-amount-${booking.bookingId}">${booking.bidPrice}</span></p>
                         <p><strong>Date Range:</strong> <span id="date-range-${booking.bookingId}">${booking.from} to ${booking.to}</span></p>
                         <p><strong>Placed At:</strong> ${booking.createdAt}</p>
                         <button class="chat-button" onclick="redirectToChat('${chatId}', '${booking.bookingId}', '${booking.from}', '${booking.to}', '${booking.carName}', '${booking.ownerId}')">Chat</button>

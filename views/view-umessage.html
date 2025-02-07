@@ -173,6 +173,7 @@
         </div>
 
         <div class="main">
+            <a href="./view-umessages.html">Go back</a>
             <h2>Conversation</h2>
             <div id="chat-messages" class="chat-messages"></div>
 
@@ -223,9 +224,21 @@
         const userId = getCookie("userId");
         if (!userId) window.location.href = "./login.html";
 
-        function getChatIdFromURL() {
+        // function getContextFromURL(){
+        //     const urlParams = new URLSearchParams(window.location.search);
+        //     const context = urlParams.get('context');
+        //     return context ? JSON.parse(decodeURIComponent(context)):null;
+        // }
+
+        // function getChatIdFromURL() {
+        //     const context = getContextFromURL();
+        //     return context ? context.chatId : null;
+        // }
+
+        function getChatIdFromURL(){
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('chatId');
+            const chatId  = urlParams.get('chatId');
+            return chatId;
         }
 
         function getCarIdFromChatId(chatId) {
@@ -236,6 +249,7 @@
         async function renderCarDetails() {
             const chatId = getChatIdFromURL();
             const carId = getCarIdFromChatId(chatId);
+            console.log(carId);
             if (!carId) {
                 alert("Car not found.");
                 return;

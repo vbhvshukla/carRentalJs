@@ -15,9 +15,6 @@
                 <img src="../assets/images/logo.png" alt="Logo">
             </div>
             <nav class="nav-links">
-                <a href="#" id="about-us-link">About Us</a>
-                <a href="#" id="contact-us-link">Contact Us</a>
-                <!-- <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a> -->
                 <a href="./udashboard.html" id="user-dashboard-link">User Dashboard</a>
                 <a href="./odashboard.html" id="owner-dashboard-link">Owner Dashboard</a>
                 <a href="./login.html" id="login-signup-link">Login</a>
@@ -45,9 +42,6 @@
                         <label for="car-category">Car Category:</label>
                         <select id="car-category" name="car-category">
                             <option value="">Select Category</option>
-                            <option value="sedan">Sedan</option>
-                            <option value="suv">SUV</option>
-                            <option value="hatchback">Hatchback</option>
                         </select>
                     </div>
                     <h3>Filter by</h3>
@@ -185,7 +179,7 @@
                     </div>
                     <div class="car-rating">
                         <span class="stars">${generateStarRating(car.avgRating)}</span>
-                        <span class="rating-count">(${car.avgRating.toFixed(1)}/5, ${car.reviewCount} reviews)</span>
+                        <span class="rating-count">(${car.avgRating.toFixed(1)}/5, ${car.ratingCount} reviews)</span>
                     </div>
                     <div class="user-info">
                         <svg class="user-icon" viewBox="0 0 24 24" width="16" height="16">
@@ -242,7 +236,7 @@
             images[activeIndex].classList.add("active");
         }
 
-        function updatePriceRangeValue(value) {
+        window.updatePriceRangeValue = function(value) {
             document.getElementById('price-range-value').textContent = value;
         }
 
@@ -318,6 +312,18 @@
             return filteredCars;
         }
 
+        
+        async function populateCategoryOptions() {
+            const categories = await getAllItems("categories");
+            const categorySelect = document.getElementById('car-category');
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.categoryId;
+                option.textContent = category.categoryName;
+                categorySelect.appendChild(option);
+            });
+        }
+
         function renderFilteredCars(cars) {
             const carsContainer = document.getElementById("cars-container");
             carsContainer.innerHTML = "";
@@ -334,6 +340,7 @@
         document.addEventListener("DOMContentLoaded", () => {
             renderCars();
             updateNavLinks();
+            populateCategoryOptions();
             document.getElementById('logout-link').addEventListener('click', (event) => {
                 event.preventDefault();
                 logout();

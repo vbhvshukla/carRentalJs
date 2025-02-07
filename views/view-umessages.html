@@ -64,6 +64,8 @@
         }
 
         .message-item {
+            display: flex;
+            align-items: center;
             padding: 10px;
             border-bottom: 1px solid #ccc;
         }
@@ -77,7 +79,28 @@
             cursor: pointer;
         }
 
-        .message-item .timestamp {
+        .message-item img {
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+        }
+
+        .message-item .message-content {
+            flex-grow: 1;
+        }
+
+        .message-item .message-content .name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .message-item .message-content .last-message {
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .message-item .message-content .timestamp {
             font-size: 0.9em;
             color: #888;
         }
@@ -92,9 +115,6 @@
             </div>
             <nav class="nav-links">
                 <a href="./index.html">Home</a>
-                <a href="#">About Us</a>
-                <a href="#">Contact Us</a>
-                <a href="./mybiddings.html">My Biddings</a>
                 <a href="./login.html" id="login-signup-link">Login</a>
                 <a href="#" id="logout-link">Logout</a>
             </nav>
@@ -115,37 +135,46 @@
         if (!userId) window.location.href = "./login.html";
 
         async function getUserNames(participants) {
-            const userNames = await Promise.all(participants.map(async (participantId) => {
-                const user = await getItemByKey("users", participantId);
-                return user ? { id: participantId, name: user.username } : { id: participantId, name: participantId };
-            }));
-            return userNames;
+            const userPromises = participants.map(participantId => getItemByKey("users", participantId));
+            const users = await Promise.all(userPromises);
+            return users.map(user => user.username).join(", ");
         }
 
-        async function renderMessages() {
+        async function loadConversations() {
             const conversations = await getAllItemsByIndex("conversations", "participants", userId);
             const messageList = document.getElementById("message-list");
             messageList.innerHTML = "";
 
             for (const conversation of conversations) {
-                const userNames = await getUserNames(conversation.participants);
-                const otherParticipant = userNames.find(user => user.id !== userId);
-                const item = document.createElement("div");
-                item.className = "message-item";
-                item.innerHTML = `
-                    <div><strong>Participant:</strong> ${otherParticipant.name}</div>
-                    <div><strong>Last Message:</strong> ${conversation.lastMessage}</div>
-                    <div class="timestamp"><strong>Timestamp:</strong> ${new Date(conversation.lastTimestamp).toLocaleString()}</div>
+                const otherParticipantId = conversation.participants.find(id => id !== userId);
+                const otherUser = await getItemByKey("users", otherParticipantId);
+                const lastMessage = conversation.lastMessage;
+                const timestamp = new Date(conversation.lastTimestamp).toLocaleString();
+
+                const messageItem = document.createElement("div");
+                messageItem.className = "message-item";
+                messageItem.onclick = () => redirectToChat(conversation.chatId);
+
+                messageItem.innerHTML = `
+                    <img src="${otherUser.profileImage || '../assets/images/profile.jpg'}" alt="Profile Image">
+                    <div class="message-content">
+                        <div class="name">${otherUser.username}</div>
+                        <div class="last-message">${lastMessage}</div>
+                        <div class="timestamp">${timestamp}</div>
+                    </div>
                 `;
-                item.addEventListener("click", () => {
-                    window.location.href = `./view-umessage.html?chatId=${conversation.chatId}`;
-                });
-                messageList.appendChild(item);
+
+                messageList.appendChild(messageItem);
             }
         }
 
+        function redirectToChat(chatId) {
+            const url = `./view-umessage.html?chatId=${chatId}`;
+            window.location.href = url;
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
-            renderMessages();
+            loadConversations();
             updateNavLinks();
             document.getElementById('logout-link').addEventListener('click', (event) => {
                 event.preventDefault();
