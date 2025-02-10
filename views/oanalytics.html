@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard :: Analytics</title>
+    <link rel="stylesheet" href="../styles/oanalytics.css">
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <a href="./index.html"><img src="../assets/images/logo.png" alt="Logo"></a>
+            </div>
+            <nav class="nav-links">
+                <a href="./index.html">Home</a>
+                <a href="./udashboard.html" id="user-dashboard-link">User Dashboard</a>
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <h3>Owner Dashboard</h3>
+                <ul>
+                    <li><a href="./odashboard.html">🏠 Dashboard</a></li>
+                    <li><a href="./view-cars.html">🚗 My Cars</a></li>
+                    <li><a href="./oanalytics.html">📊 Analytics</a></li>
+                    <li><a href="./view-omessages.html">📨 All Message</a></li>
+                    <li><a href="./add-car.html">➕ Add New Car</a></li>
+                </ul>
+            </div>
+
+            <div class="content">
+                <h2>Analytics</h2>
+                <div class="analytics-section">
+                    <div>
+                        <label for="time-range">Filter by:</label>
+                        <select id="time-range">
+                            <option value="7">Last Week</option>
+                            <option value="30" selected>Last Month</option>
+                            <option value="365">Last Year</option>
+                            <option value="1095">Last 3 Years</option>
+                        </select>
+                    </div>
+                    <br>
+                    <canvas id="topBookedCarsChart"></canvas>
+                    <canvas id="bookingsOverTimeChart"></canvas>
+                    <canvas id="bookingRevenueChart"></canvas>
+                    <canvas id="bidAmountOverTimeChart"></canvas>
+                    <canvas id="bidAcceptanceRateChart"></canvas>
+                    <canvas id="carsPerCityChart"></canvas>
+                    <canvas id="bidsVsBookingsChart"></canvas>
+                    <canvas id="popularCarCategoriesChart"></canvas>
+                    <canvas id="avgBidAmountChart"></canvas>
+                    <canvas id="mostActiveRentersChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            &copy; 2025 Car Rental. All rights reserved.
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="../js/app/oanalytics.js">
+           </script>
+</body>
+
+</html>

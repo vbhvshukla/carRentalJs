@@ -4,198 +4,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Conversations</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-
-        .wrap {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            background-color: #0d7963;
-            color: #fff;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .header .logo img {
-            height: 60px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 20px;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        .nav-links a:hover {
-            color: #ffc107;
-        }
-
-        .main {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .message-list {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .message-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #ccc;
-        }
-
-        .message-item:last-child {
-            border-bottom: none;
-        }
-
-        .message-item:hover {
-            background-color: #f1f1f1;
-            cursor: pointer;
-        }
-
-        .message-item img {
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            margin-right: 15px;
-        }
-
-        .message-item .message-content {
-            flex-grow: 1;
-        }
-
-        .message-item .message-content .name {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .message-item .message-content .last-message {
-            color: #555;
-            margin-bottom: 5px;
-        }
-
-        .message-item .message-content .timestamp {
-            font-size: 0.9em;
-            color: #888;
-        }
-    </style>
+    <title>User Dashboard :: All Messages</title>
+    <link rel="stylesheet" href="../styles/view-umessages.css">
 </head>
 
 <body>
     <div class="wrap">
         <div class="header">
             <div class="logo">
-                <img src="../assets/images/logo.png" alt="Logo">
+                <a href="./index.html"> <img src="../assets/images/logo.png" alt="Logo"></a>
             </div>
             <nav class="nav-links">
                 <a href="./index.html">Home</a>
-                <a href="./login.html" id="login-signup-link">Login</a>
+                <a href="./odashboard.html" id="owner-dashboard-link">Owner Dashboard</a>
                 <a href="#" id="logout-link">Logout</a>
             </nav>
         </div>
 
         <div class="main">
-            <h2>All Conversations</h2>
-            <div id="message-list" class="message-list"></div>
+            <div class="sidebar">
+                <h3>User Dashboard</h3>
+                <ul>
+                    <li><a href="./udashboard.html">🏠 Dashboard</a></li>
+
+                    <li><a href="./view-ubooking.html">📅 My Bookings</a></li>
+                    <li><a href="./view-umessages.html">✉️ My Messages</a></li>
+                    <li><a href="./mybiddings.html">💰 My Biddings</a></li>
+                </ul>
+            </div>
+            <div class="content">
+                <h2>All Conversations</h2>
+                <div id="message-list" class="message-list">
+                    <p class="no-messages">Loading conversations...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            &copy; 2025 Car Rental. All rights reserved.
         </div>
     </div>
 
-    <script type="module">
-        import { getAllItemsByIndex, getItemByKey } from "../js/utils/dbUtils.js";
-        import { getCookie } from "../js/utils/cookie.js";
-        import { checkAuth, logout } from "../js/utils/auth.js";
-
-        const userId = getCookie("userId");
-        if (!userId) window.location.href = "./login.html";
-
-        async function getUserNames(participants) {
-            const userPromises = participants.map(participantId => getItemByKey("users", participantId));
-            const users = await Promise.all(userPromises);
-            return users.map(user => user.username).join(", ");
-        }
-
-        async function loadConversations() {
-            const conversations = await getAllItemsByIndex("conversations", "participants", userId);
-            const messageList = document.getElementById("message-list");
-            messageList.innerHTML = "";
-
-            for (const conversation of conversations) {
-                const otherParticipantId = conversation.participants.find(id => id !== userId);
-                const otherUser = await getItemByKey("users", otherParticipantId);
-                const lastMessage = conversation.lastMessage;
-                const timestamp = new Date(conversation.lastTimestamp).toLocaleString();
-
-                const messageItem = document.createElement("div");
-                messageItem.className = "message-item";
-                messageItem.onclick = () => redirectToChat(conversation.chatId);
-
-                messageItem.innerHTML = `
-                    <img src="${otherUser.profileImage || '../assets/images/profile.jpg'}" alt="Profile Image">
-                    <div class="message-content">
-                        <div class="name">${otherUser.username}</div>
-                        <div class="last-message">${lastMessage}</div>
-                        <div class="timestamp">${timestamp}</div>
-                    </div>
-                `;
-
-                messageList.appendChild(messageItem);
-            }
-        }
-
-        function redirectToChat(chatId) {
-            const url = `./view-umessage.html?chatId=${chatId}`;
-            window.location.href = url;
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            loadConversations();
-            updateNavLinks();
-            document.getElementById('logout-link').addEventListener('click', (event) => {
-                event.preventDefault();
-                logout();
-            });
-        });
-
-        async function updateNavLinks() {
-            const isAuthenticated = await checkAuth();
-            const loginSignupLink = document.getElementById('login-signup-link');
-            const logoutLink = document.getElementById('logout-link');
-
-            if (isAuthenticated) {
-                loginSignupLink.style.display = 'none';
-                logoutLink.style.display = 'block';
-            } else {
-                loginSignupLink.style.display = 'block';
-                logoutLink.style.display = 'none';
-            }
-        }
-    </script>
+    <script type="module" src="../js/app/view-umessages.js">
+           </script>
 </body>
 
 </html>

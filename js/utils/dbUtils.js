@@ -157,5 +157,63 @@ async function getTotalItems(storeName) {
     }
 }
 
+async function getItemsByTimeRange(storeName, indexName, key, days) {
+    return new Promise((resolve, reject) => {
+        openDb().then(() => {
+            const store = getObjectStore(storeName, "readonly");
+            const index = store.index(indexName);
+            const range = IDBKeyRange.only(key);
+            const request = index.openCursor(range);
+            const result = [];
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
 
-export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem ,getItemByKey,getAllItemsByIndex,getItemsWithPagination,getTotalItems};
+            request.onsuccess = function (event) {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const itemDate = new Date(cursor.value.createdAt);
+                    if (itemDate >= cutoffDate) {
+                        result.push(cursor.value);
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(result);
+                }
+            };
+
+            request.onerror = function (event) {
+                reject(event.target.error);
+            };
+        });
+    });
+}
+async function getAllItemsByTimeRange(storeName, indexName, days) {
+    return new Promise((resolve, reject) => {
+        openDb().then(() => {
+            const store = getObjectStore(storeName, "readonly");
+            const index = store.index(indexName);
+            const request = index.openCursor();
+            const result = [];
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+
+            request.onsuccess = function (event) {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const itemDate = new Date(cursor.value.createdAt);
+                    if (itemDate >= cutoffDate) {
+                        result.push(cursor.value);
+                    }
+                    cursor.continue();
+                } else {
+                    resolve(result);
+                }
+            };
+
+            request.onerror = function (event) {
+                reject(event.target.error);
+            };
+        });
+    });
+}
+export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem ,getItemByKey,getAllItemsByIndex,getItemsWithPagination,getTotalItems,getItemsByTimeRange,getAllItemsByTimeRange};

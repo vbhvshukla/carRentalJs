@@ -5,9 +5,10 @@
 }
 
 body {
-  font-family: "Roboto", sans-serif;
-  background-color: #f8f9fa;
-  color: #343a40;
+  font-family: "Poppins", sans-serif;
+  background-color: #f4f7f6;
+  color: #333;
+  line-height: 1.6;
 }
 
 .wrap {
@@ -17,48 +18,57 @@ body {
 }
 
 .header {
-  background-color: #0d7963;
+  background: #2c3e50;
   color: #fff;
   padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: -20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .logo img {
   height: 50px;
 }
 
+.nav-links {
+  display: flex;
+  align-items: center;
+}
+
 .nav-links a {
-  width: 100px;
-  color: white;
+  color: #ecf0f1;
   text-decoration: none;
   margin-left: 20px;
   font-weight: 500;
-  transition: color 0.3s;
+  transition: color 0.3s, transform 0.2s;
 }
 
 .nav-links a:hover {
-  color: #ffc107;
+  color: #3498db;
+  transform: scale(1.05);
 }
 
 .main {
   display: flex;
   margin: 20px 0;
-  width: 100%;
+  gap: 20px;
 }
 
 .sidebar {
   flex: 0 0 25%;
   padding: 20px;
-  background-color: #e9ecef;
-  border-right: 1px solid #dee2e6;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar h3 {
   margin-bottom: 15px;
-  color: #007bff;
+  color: #2c3e50;
+  font-size: 1.25rem;
 }
 
 .form-group {
@@ -68,15 +78,42 @@ body {
 .form-group label {
   display: block;
   margin-bottom: 5px;
-  font-weight: bold;
+  font-weight: 500;
+  color: #34495e;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
+  padding: 12px;
+  border: 1px solid #bdc3c7;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+.form-group input[type="range"] {
+  flex: 2;
+  appearance: none;
+  -webkit-appearance: none;
+  height: 2px;
+  background: #2c3e50;
+  border-radius: 5px;
+  outline: none;
+  transition: 0.3s;
+}
+
+.form-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #3498db;
+  outline: none;
 }
 
 .form-group input[type="range"] {
@@ -85,56 +122,62 @@ body {
 }
 
 button[type="submit"] {
-  background-color: #007bff;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
   color: white;
-  padding: 10px 15px;
+  padding: 12px 20px;
   border: none;
-  border-radius: 5px;
-  font-weight: bold;
+  border-radius: 6px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.3s;
+  transition: all 0.3s;
+  width: 100%;
 }
 
 button[type="submit"]:hover {
-  background-color: #0056b3;
+  background: linear-gradient(135deg, #2a5298, #1e3c72);
   transform: translateY(-2px);
 }
 
 .content {
   flex: 0 0 75%;
+  max-width: 73%;
   padding: 20px;
-  overflow: hidden;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .footer {
   text-align: center;
-  background-color: #0d7963;
+  background-color: #2c3e50;
   color: #fff;
-  padding: 15px;
-  /* position: fixed; */
-  bottom: 0;
-  width: 97.5%;
+  padding: 20px;
+  margin-top: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .cars-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
 .car-card {
-  border: 1px solid #dee2e6;
+  border: 1px solid #bdc3c7;
   border-radius: 8px;
-  margin: 15px;
   overflow: hidden;
   background-color: white;
-  width: calc(50% - 30px);
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: transform 0.3s ease;
 }
-
+.car-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: fit;
+}
 .car-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
 }
 
 .carousel {
@@ -167,6 +210,11 @@ button[type="submit"]:hover {
   font-size: 20px;
   border-radius: 5px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s;
+}
+
+.carousel-button:hover {
+  background-color: rgba(255, 255, 255, 1);
 }
 
 .carousel-button.prev {
@@ -182,30 +230,52 @@ button[type="submit"]:hover {
 }
 
 .car-name {
-  font-size: 1.5em;
-  color: #007bff;
+  font-size: 1.5rem;
+  color: #2c3e50;
   margin: 10px 0;
+  font-weight: 400;
 }
 
 .car-features {
-  margin: 10px 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  align-items: center;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.car-features::-webkit-scrollbar {
+  display: none;
 }
 
 .feature {
   background-color: #e9ecef;
-  padding: 5px;
+  padding: 5px 10px;
   border-radius: 4px;
-  margin-right: 5px;
+  font-size: 12px;
+  color: #495057;
+  flex-shrink: 0;
 }
 
-.car-rating {
-  margin: 10px 0;
+.rating-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .stars {
-  color: #ffc107;
+  color: #f1c40f;
 }
 
+.rating-count {
+  font-size: 13px;
+  color: #888;
+  opacity: 0.8;
+}
 .user-info {
   display: flex;
   align-items: center;
@@ -213,7 +283,7 @@ button[type="submit"]:hover {
 }
 
 .user-icon {
-  fill: #007bff;
+  fill: #3498db;
   margin-right: 5px;
 }
 
@@ -224,40 +294,39 @@ button[type="submit"]:hover {
 }
 
 .price {
-  font-size: 1.2em;
-  color: #28a745;
-  font-weight: bold;
+  font-size: 1.1rem;
+  color: #1c7441;
+  font-weight: 400;
 }
 
 .book-now-btn {
-  background-color: #007bff;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
   color: white;
   padding: 10px 15px;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.3s;
+  transition: all 0.3s;
+  width: 100%;
 }
 
 .book-now-btn:hover {
-  background-color: #0056b3;
+  background: linear-gradient(135deg, #2a5298, #1e3c72);
   transform: translateY(-2px);
 }
 
 @media (max-width: 768px) {
   .car-card {
-    width: calc(50% - 30px);
+    width: calc(50% - 10px);
   }
-}
 
-@media (max-width: 576px) {
-  .car-card {
-    width: calc(100% - 30px);
+  .main {
+    flex-direction: column;
   }
 
   .sidebar {
-    display: none;
+    width: 100%;
   }
 }

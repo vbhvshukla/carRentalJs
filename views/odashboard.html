@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Owner Dashboard</title>
-    <link rel="stylesheet" href="/styles/index.css">
+    <link rel="stylesheet" href="../styles/odashboard.css">
 </head>
 
 <body>
@@ -15,9 +15,8 @@
                 <img src="../assets/images/logo.png" alt="Logo">
             </div>
             <nav class="nav-links">
-                
-                <!-- <a href="./mybiddings.html" id="my-biddings-link">My Biddings</a> -->
-                <!-- <a href="./login.html" id="login-signup-link">Login</a> -->
+                <a href="./index.html">Home</a>
+                <a href="./udashboard.html" id="user-dashboard-link">User Dashboard</a>
                 <a href="#" id="logout-link">Logout</a>
             </nav>
         </div>
@@ -26,273 +25,102 @@
             <div class="sidebar">
                 <h3>Owner Dashboard</h3>
                 <ul>
-                    <li><a href="./odashboard.html">Dashboard</a></li>
-                    <li><a href="./add-car.html">Add New Car</a></li>
-                    <li><a href="./view-cars.html">View Cars</a></li>
-                    <li><a href="./view-omessages.html">View All Message</a></li>
-
-
-         </ul>
+                    <li><a href="./odashboard.html">🏠 Dashboard</a></li>
+                    <li><a href="./view-cars.html">🚗 My Cars</a></li>
+                    <li><a href="./oanalytics.html">📊 Analytics</a></li>
+                    <li><a href="./view-omessages.html">📨 All Message</a></li>
+                    <li><a href="./add-car.html">➕ Add New Car</a></li>
+                </ul>
             </div>
 
             <div class="content">
-                <h2>Pending Bids on Your Cars</h2>
-                <div id="pending-bids-container" class="bids-container"></div>
-                <h2>Rejected Bids</h2>
-                <div id="rejected-bids-container" class="bids-container"></div>
-                <h2>Active Bookings</h2>
-                <div id="bookings-container" class="bookings-container"></div>
+                <div class="container">
+                    <h2>Pending Bids</h2>
+                    <table id="pending-bids-table">
+                        <thead>
+                            <tr>
+                                <th>Car Name</th>
+                                <th>Bid Amount</th>
+                                <th>Total Amount</th>
+                                <th>User</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="pending-pagination">
+                        <button id="prev-pending">Previous</button>
+                        <span id="pending-page-info"></span>
+                        <button id="next-pending">Next</button>
+                    </div>
+                    <p id="no-pending-bids" class="hidden">No pending bids.</p>
+
+
+                    <h2>Active Bookings</h2>
+                    <table id="bookings-table">
+                        <thead>
+                            <tr>
+                                <th>Car Name</th>
+                                <th>Bid Price</th>
+                                <th>Total Amount</th>
+                                <th>User</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination"  id="bookings-pagination">
+                        <button id="prev-bookings">Previous</button>
+                        <span id="bookings-page-info"></span>
+                        <button id="next-bookings">Next</button>
+                    </div>
+                    <p id="no-bookings" class="hidden">No active bookings.</p>
+
+                    <h2>All Bids</h2>
+                    <select id="status-sort">
+                        <option value="all">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="accepted">Accepted</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <table id="all-bids-table">
+                        <thead>
+                            <tr>
+                                <th>Car Name</th>
+                                <th>Bid Amount</th>
+                                <th>Total Amount</th>
+                                <th>User</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="all-bids-pagination" >
+                        <button id="prev-all-bids">Previous</button>
+                        <span id="all-bids-page-info"></span>
+                        <button id="next-all-bids">Next</button>
+                    </div>
+                    <p id="no-all-bids" class="hidden">No bids found.</p>
+
+                </div>
             </div>
         </div>
-
         <div class="footer">
-            Footer
+            &copy; 2025 Car Rental. All rights reserved.
         </div>
     </div>
 
-    <script type="module">
-        import { getAllItemsByIndex, getItemByKey, updateItem, addItem, getAllItems } from "../js/utils/dbUtils.js";
-        import { checkAuth, logout } from "../js/utils/auth.js";
-        import { getCookie } from "../js/utils/cookie.js";
-        import { generateRandomId } from "../js/utils/generateId.js";
+   
+    </div>
 
-        const userId = getCookie("userId");
-        if(!userId){
-            window.location.href="./login.html"
-        }
-
-        async function updateNavLinks() {
-            const isAuthenticated = await checkAuth();
-            const myBiddingsLink = document.getElementById('my-biddings-link');
-            const loginSignupLink = document.getElementById('login-signup-link');
-            const logoutLink = document.getElementById('logout-link');
-
-            if (isAuthenticated) {
-                myBiddingsLink.style.display = 'block';
-                loginSignupLink.style.display = 'none';
-                logoutLink.style.display = 'block';
-            } else {
-                myBiddingsLink.style.display = 'none';
-                loginSignupLink.style.display = 'block';
-                logoutLink.style.display = 'none';
-            }
-        }
-
-        async function getPendingBids() {
-            try {
-                const ownerId = getCookie("userId");
-                const ownerBids = await getAllItemsByIndex("bids", "ownerId", ownerId);
-                return ownerBids.filter(bid => bid.status === "Pending");
-            } catch (error) {
-                console.error("Error fetching pending bids:", error);
-                return [];
-            }
-        }
-
-        async function getRejectedBids() {
-            try {
-                const ownerId = getCookie("userId");
-                const ownerBids = await getAllItemsByIndex("bids", "ownerId", ownerId);
-                return ownerBids.filter(bid => bid.status === "Rejected");
-            } catch (error) {
-                console.error("Error fetching rejected bids:", error);
-                return [];
-            }
-        }
-
-        async function getBookings() {
-            try {
-                const ownerId = getCookie("userId");
-                const ownerBookings = await getAllItemsByIndex("bookings", "ownerId", ownerId);
-                return ownerBookings;
-            } catch (error) {
-                console.error("Error fetching bookings:", error);
-                return [];
-            }
-        }
-
-        function createBidCard(bid) {
-            const card = document.createElement("div");
-            card.className = "car-card";
-            const bidDetails = `
-                <div class="car-details">
-                    <h3 class="car-name">${bid.carName}</h3>
-                    <div class="car-features">
-                        <span class="feature">Bid Amount: $${bid.bidAmount}</span>
-                    </div>
-                    <div class="car-rating">
-                        <span class="stars">From: ${bid.from}</span>
-                        <span class="rating-count">To: ${bid.to}</span>
-                    </div>
-                    <div class="car-price-city">
-                        <span class="price">Status: ${bid.status}</span>
-                        <span class="city">Created At: ${new Date(bid.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    ${bid.status === "Pending" ? `
-                    <button class="accept-bid-btn">Accept Bid</button>
-                    <button class="reject-bid-btn">Reject Bid</button>
-                    ` : ''}
-                </div>
-            `;
-            card.innerHTML = bidDetails;
-
-            if (bid.status === "Pending") {
-                const acceptBidButton = card.querySelector(".accept-bid-btn");
-                const rejectBidButton = card.querySelector(".reject-bid-btn");
-
-                acceptBidButton.addEventListener("click", () => acceptBid(bid));
-                rejectBidButton.addEventListener("click", () => rejectBid(bid.bidId));
-            }
-
-            return card;
-        }
-
-        function createBookingCard(booking) {
-            const card = document.createElement("div");
-            card.className = "car-card";
-            const bookingDetails = `
-                <div class="car-details">
-                    <h3 class="car-name">${booking.carName}</h3>
-                    <div class="car-features">
-                        <span class="feature">Bid Price: $${booking.bidPrice}</span>
-                    </div>
-                    <div class="car-rating">
-                        <span class="stars">From: ${booking.from}</span>
-                        <span class="rating-count">To: ${booking.to}</span>
-                    </div>
-                    <div class="car-price-city">
-                        <span class="price">User: ${booking.username}</span>
-                        <span class="city">Created At: ${new Date(booking.createdAt).toLocaleDateString()}</span>
-                    </div>
-                </div>
-            `;
-            card.innerHTML = bookingDetails;
-
-            return card;
-        }
-
-        async function renderPendingBids() {
-            const bids = await getPendingBids();
-            const bidsContainer = document.getElementById("pending-bids-container");
-            bidsContainer.innerHTML = "";
-            if (bids.length === 0) {
-                bidsContainer.innerHTML = "<p>No pending bids on your cars.</p>";
-                return;
-            }
-            bids.forEach((bid) => {
-                const card = createBidCard(bid);
-                bidsContainer.appendChild(card);
-            });
-        }
-
-        async function renderRejectedBids() {
-            const bids = await getRejectedBids();
-            const bidsContainer = document.getElementById("rejected-bids-container");
-            bidsContainer.innerHTML = "";
-            if (bids.length === 0) {
-                bidsContainer.innerHTML = "<p>No rejected bids.</p>";
-                return;
-            }
-            bids.forEach((bid) => {
-                const card = createBidCard(bid);
-                bidsContainer.appendChild(card);
-            });
-        }
-
-        async function renderBookings() {
-            const bookings = await getBookings();
-            const bookingsContainer = document.getElementById("bookings-container");
-            bookingsContainer.innerHTML = "";
-            if (bookings.length === 0) {
-                bookingsContainer.innerHTML = "<p>No bookings found.</p>";
-                return;
-            }
-            bookings.forEach((booking) => {
-                const card = createBookingCard(booking);
-                bookingsContainer.appendChild(card);
-            });
-        }
-
-        function isDateRangeOverlap(startDate1, endDate1, startDate2, endDate2) {
-            return (startDate1 <= endDate2 && endDate1 >= startDate2);
-        }
-
-        async function acceptBid(acceptedBid) {
-            try {
-                const bids = await getPendingBids();
-                const overlappingBids = bids.filter(bid =>
-                    bid.carId === acceptedBid.carId &&
-                    bid.bidId !== acceptedBid.bidId &&
-                    isDateRangeOverlap(new Date(bid.from), new Date(bid.to), new Date(acceptedBid.from), new Date(acceptedBid.to))
-                );
-
-                acceptedBid.status = "Accepted";
-                await updateItem("bids", acceptedBid);
-
-                for (const bid of overlappingBids) {
-                    bid.status = "Rejected";
-                    await updateItem("bids", bid);
-                }
-
-                const booking = {
-                    bid:acceptedBid.bidId,
-                    bookingId: generateRandomId(),
-                    userId: acceptedBid.userId,
-                    username: acceptedBid.username,
-                    carId: acceptedBid.carId,
-                    carName: acceptedBid.carName,
-                    ownerId: acceptedBid.ownerId,
-                    ownerName: acceptedBid.ownerName,
-                    bidPrice: acceptedBid.bidAmount,
-                    from: acceptedBid.from,
-                    to: acceptedBid.to,
-                    isValid: true,
-                    createdAt: new Date().toISOString().split('T')[0]
-                };
-
-                await addItem("bookings", booking);
-
-                // Update car availability to "unavailable"
-                const car = await getItemByKey("cars", acceptedBid.carId);
-                car.availability = "unavailable";
-                await updateItem("cars", car);
-
-                alert(`Accepted bid with ID: ${acceptedBid.bidId}`);
-                renderPendingBids();
-                renderRejectedBids();
-                renderBookings();
-            } catch (error) {
-                console.error(`Error accepting bid with ID: ${acceptedBid.bidId}`, error);
-                alert('Failed to accept bid. Please try again.');
-            }
-        }
-
-        async function rejectBid(bidId) {
-            try {
-                const bid = await getItemByKey("bids", bidId);
-                bid.status = "Rejected";
-                await updateItem("bids", bid);
-                alert(`Rejected bid with ID: ${bidId}`);
-                renderPendingBids();
-                renderRejectedBids();
-            } catch (error) {
-                console.error(`Error rejecting bid with ID: ${bidId}`, error);
-                alert('Failed to reject bid. Please try again.');
-            }
-        }
-
-        document.getElementById('logout-link').addEventListener('click', (event) => {
-                event.preventDefault();
-                logout();
-            });
-
-        document.addEventListener("DOMContentLoaded", () => {
-            renderPendingBids();
-            renderRejectedBids();
-            renderBookings();
-            updateNavLinks();
-            
-        });
+    <script type="module" src="../js/app/odashboard.js">
+       
     </script>
 </body>
 

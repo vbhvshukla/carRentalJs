@@ -4,108 +4,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Rental Login</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .login-container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 400px;
-        }
-
-        .login-container h2 {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .login-container input,
-        .login-container button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        .radio-group {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin: 10px 0;
-        }
-
-        .radio-group label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 14px;
-        }
-
-        .login-container button {
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-        }
-
-        .login-container button:hover {
-            background-color: #0056b3;
-        }
-
-        .login-container .signup-link {
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        .login-container .signup-link a {
-            color: #007bff;
-            text-decoration: none;
-        }
-
-        .login-container .signup-link a:hover {
-            text-decoration: underline;
-        }
-
-        .error {
-            color: red;
-            text-align: center;
-            margin-top: 10px;
-        }
-    </style>
+    <title>Carental - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/auth.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 
 <body>
-    <div class="login-container">
-        <h2>Login</h2>
-        <form id="loginForm">
-            <input id="email" type="email" name="email" placeholder="Email" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-                required>
-            <input id="password" type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-            <div class="error" id="error-message"></div>
-        </form>
-        <div class="signup-link">
-            <p>Not registered? <a href="./register.html">Sign up here</a></p>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <a href="./index.html"><img src="../assets/images/logo.png" alt="Logo"></a>
+            </div>
+            <nav class="nav-links">
+                <a href="./index.html">Home</a>
+                <!-- <a href="./register.html">Register</a> -->
+            </nav>
+        </div>
+
+        <div class="auth-container">
+            <div class="auth-box">
+                <h2>Welcome Back!</h2>
+                <p class="subtext">Login to continue renting cars.</p>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input id="email" type="email" name="email" placeholder="Enter your email" pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" required>
+                        <p class="error-message" id="email-error"></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input id="password" type="password" name="password" min="3" placeholder="Enter your password" required>
+                        <p class="error-message" id="password-error"></p>
+                    </div>
+                    <button type="submit">Login</button>
+                    <p class="error-message" id="error-message"></p>
+                    <p class="switch-page">Not registered? <a href="./register.html">Sign up here</a></p>
+                </form>
+            </div>
+        </div>
+
+        <div class="footer">
+            &copy; 2025 Car Rental. All rights reserved.
         </div>
     </div>
-    <script type="module">
-        import {checkAuth} from "../js/utils/auth.js";
-        if(checkAuth()) window.location.href="./index.html";
-    </script>
+
     <script type="module" defer src="/js/app/login.js"></script>
 </body>
 

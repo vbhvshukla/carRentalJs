@@ -4,121 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Cars</title>
+    <title>Owner Dashboard :: My Cars</title>
     <link rel="stylesheet" href="/styles/index.css">
-    <style>
-    .car-card {
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .carousel {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-            overflow: hidden;
-        }
-
-        .carousel-images {
-            display: flex;
-            transition: transform 0.5s ease;
-        }
-
-        .carousel-image {
-            min-width: 100%;
-            transition: opacity 0.5s ease;
-        }
-
-        .carousel-button {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-        }
-
-        .carousel-button.prev {
-            left: 0;
-        }
-
-        .carousel-button.next {
-            right: 0;
-        }
-
-        .car-details {
-            text-align: center;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-
-        .button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .button:hover {
-            background-color: #0056b3;
-        }
-
-        #features-container {
-            display: flex;
-            gap: 10px;
-        }
-
-        #features-list {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        #features-list li {
-            background-color: #f4f4f4;
-            padding: 5px;
-            margin: 5px 0;
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #features-list li button {
-            background-color: #ff4d4d;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            padding: 5px;
-        }
-
-        #features-list li button:hover {
-            background-color: #cc0000;
-        }
-    </style>
+    <link rel="stylesheet" href="../styles/view-cars.css">
 </head>
 
 <body>
@@ -129,8 +17,7 @@
             </div>
             <nav class="nav-links">
                 <a href="./index.html">Home</a>
-                <a href="./odashboard.html">Owner Dashboard</a>
-                <a href="./login.html" id="login-signup-link">Login</a>
+                <a href="./udashboard.html" id="user-dashboard-link">User Dashboard</a>
                 <a href="#" id="logout-link">Logout</a>
             </nav>
         </div>
@@ -139,10 +26,11 @@
             <div class="sidebar">
                 <h3>Owner Dashboard</h3>
                 <ul>
-                    <li><a href="./odashboard.html">Dashboard</a></li>
-                    <li><a href="./add-car.html">Add New Car</a></li>
-                    <li><a href="./view-bookings.html">View All Bookings</a></li>
-                    <li><a href="./view-cars.html">View All Cars</a></li>
+                    <li><a href="./odashboard.html">🏠 Dashboard</a></li>
+                    <li><a href="./view-cars.html">🚗 My Cars</a></li>
+                    <li><a href="./oanalytics.html">📊 Analytics</a></li>
+                    <li><a href="./view-omessages.html">📨 All Message</a></li>
+                    <li><a href="./add-car.html">➕ Add New Car</a></li>
                 </ul>
             </div>
 
@@ -153,256 +41,12 @@
         </div>
 
         <div class="footer">
-            Footer
+            &copy; 2025 Car Rental. All rights reserved.
         </div>
     </div>
 
-    <script type="module">
-        import { getAllItemsByIndex, updateItem ,getAllItems } from "../js/utils/dbUtils.js";
-        import { checkAuth, logout } from "../js/utils/auth.js";
-        import { getCookie } from "../js/utils/cookie.js";
-
-        const userId = getCookie("userId");
-        const role = getCookie("role");
-
-        async function updateNavLinks() {
-            const isAuthenticated = await checkAuth();
-            const loginSignupLink = document.getElementById('login-signup-link');
-            const logoutLink = document.getElementById('logout-link');
-
-            if (isAuthenticated) {
-                loginSignupLink.style.display = 'none';
-                logoutLink.style.display = 'block';
-            } else {
-                loginSignupLink.style.display = 'block';
-                logoutLink.style.display = 'none';
-            }
-        }
-
-        async function renderOwnerCars() {
-            const ownerId = getCookie("userId");
-            const cars = await getAllItemsByIndex("cars", "ownerId", ownerId);
-            const carsContainer = document.getElementById("cars-container");
-            carsContainer.innerHTML = "";
-            if (cars.length === 0) {
-                carsContainer.innerHTML = "<p>No cars found.</p>";
-                return;
-            }
-            cars.forEach((car) => {
-                const card = createCarCard(car);
-                carsContainer.appendChild(card);
-            });
-        }
-        async function populateCategoryOptions() {
-            const categories = await getAllItems("categories");
-            const categorySelect = document.getElementById('category');
-            categorySelect.innerHTML = '<option value="">Select Category</option>';
-            categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.categoryId;
-                option.textContent = category.categoryName;
-                categorySelect.appendChild(option);
-            });
-        }
-
-        function createCarCard(car) {
-            const card = document.createElement("div");
-            card.className = "car-card";
-            const carousel = `
-                <div class="carousel">
-                    <div class="carousel-images">
-                        ${car.images.map((image, index) =>`<img src="${image}" alt="Car Image ${index + 1}" class="carousel-image ${index === 0 ? "active" : ""}">`)
-                    .join("")}
-                    </div>
-                    <button class="carousel-button prev" onclick="prevImage(this)">&#10094;</button>
-                    <button class="carousel-button next" onclick="nextImage(this)">&#10095;</button>
-                </div>
-            `;
-            // <div class="car-images">
-            //     ${car.images.map((image) => `<img src="${image}" alt="Car Image">`).join("")}
-            // </div>
-
-            const carDetails = `
-                <div class="car-details">
-                    <h3 class="car-name">${car.carName}</h3>
-                    <div class="car-features">
-                        ${car.featured.map((feature) => `<span class="feature">${feature}</span>`).join("")}
-                    </div>
-                    <div class="car-rating">
-                        <span class="stars">${generateStarRating(car.avgRating)}</span>
-                        <span class="rating-count">(${car.avgRating.toFixed(1)}/5, ${car.ratingCount} reviews)</span>
-                    </div>
-                    <div class="car-price-city">
-                        <span class="price">$${car.basePrice}/day</span>
-                        <span class="city">${car.city}</span>
-                    </div>
-                    <div class="car-description">
-                        <p>${car.description}</p>
-                    </div>
-                    <div class="car-info">
-                        <p>Type: ${car.carType}</p>
-                        <p>Category: ${car.categoryName}</p>
-                        <p>Created At: ${new Date(car.createdAt).toLocaleDateString()}</p>
-                    </div>
-                    <button class="edit-car-btn">Edit Car</button>
-                </div>
-            `;
-            card.innerHTML = carousel+ carDetails;
-
-            const editCarButton = card.querySelector(".edit-car-btn");
-            editCarButton.addEventListener("click", () => editCar(car));
-
-            return card;
-        }
-        
-        window.prevImage = function (button) {
-            const carousel = button.closest(".carousel");
-            const images = carousel.querySelectorAll(".carousel-image");
-            let activeIndex = Array.from(images).findIndex((img) =>
-                img.classList.contains("active")
-            );
-
-            images[activeIndex].classList.remove("active");
-            activeIndex = (activeIndex - 1 + images.length) % images.length;
-            images[activeIndex].classList.add("active");
-        }
-
-        window.nextImage = function (button) {
-            const carousel = button.closest(".carousel");
-            const images = carousel.querySelectorAll(".carousel-image");
-            let activeIndex = Array.from(images).findIndex((img) =>
-                img.classList.contains("active")
-            );
-
-            images[activeIndex].classList.remove("active");
-            activeIndex = (activeIndex + 1) % images.length;
-            images[activeIndex].classList.add("active");
-        }
-        function generateStarRating(avgRating) {
-            const fullStars = Math.floor(avgRating);
-            const halfStar = avgRating % 1 >= 0.5 ? 1 : 0;
-            const emptyStars = 5 - fullStars - halfStar;
-
-            return (
-                "★".repeat(fullStars) +
-                "½".repeat(halfStar) +
-                "☆".repeat(emptyStars)
-            );
-        }
-
-        function editCar(car) {
-            const carDetails = `
-                <div class="car-edit-form">
-                    <h3>Edit Car: ${car.carName}</h3>
-                    <form id="edit-car-form">
-                        <div class="form-group">
-                            <label for="carName">Car Name:</label>
-                            <input type="text" id="carName" name="carName" value="${car.carName}">
-                        </div>
-                        <div class="form-group">
-                            <label for="category">Category:</label>
-                            <select id="category" name="category" required></select>
-                        </div>
-                        <div class="form-group">
-                            <label for="basePrice">Base Price:</label>
-                            <input type="number" id="basePrice" name="basePrice" value="${car.basePrice}">
-                        </div>
-                        <div class="form-group">
-                            <label for="description">Description:</label>
-                            <textarea id="description" name="description">${car.description}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="availability">Availability:</label>
-                            <select id="availability" name="availability" required>
-                                <option value="Available" ${car.availability === 'Available' ? 'selected' : ''}>Available</option>
-                                <option value="Unavailable" ${car.availability === 'Unavailable' ? 'selected' : ''}>Save As Draft</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="images">Image:</label>
-                            <input type="file" id="images" name="images" accept="image/*" multiple>
-                        </div>
-                        <div class="form-group">
-                            <label for="city">City:</label>
-                            <input type="text" id="city" name="city" list="city-list" value="${car.city}" required>
-                            <datalist id="city-list"></datalist>
-                        </div>
-                        <div class="form-group">
-                            <label for="features">Featured:</label>
-                            <div id="features-container">
-                                <input type="text" id="feature-input" placeholder="Enter a feature">
-                                <button type="button" id="add-feature-btn">Add New Feature</button>
-                            </div>
-                            <ul id="features-list">
-                                ${car.featured.map((feature) => `<li>${feature} <button type="button" onclick="removeFeature(this)">Remove</button></li>`).join("")}
-                            </ul>
-                        </div>
-                        <div class="form-group">
-                            <label for="car-type">Car Type:</label>
-                            <select id="car-type" name="car-type" required>
-                                <option value="Automatic" ${car.carType === 'Automatic' ? 'selected' : ''}>Automatic</option>
-                                <option value="Manual" ${car.carType === 'Manual' ? 'selected' : ''}>Manual</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="button">Save Changes</button>
-                    </form>
-                </div>
-            `;
-
-            const carsContainer = document.getElementById("cars-container");
-            carsContainer.innerHTML = carDetails;
-            populateCategoryOptions(car.categoryName);
-
-            document.getElementById("edit-car-form").addEventListener("submit", async function (event) {
-                event.preventDefault();
-
-                const updatedCar = {
-                    ...car,
-                    carName: document.getElementById("carName").value,
-                    basePrice: parseFloat(document.getElementById("basePrice").value),
-                    carType: document.getElementById("carType").value,
-                    categoryName: document.getElementById("category").value,
-                    city: document.getElementById("city").value,
-                    description: document.getElementById("description").value,
-                    featured: Array.from(document.querySelectorAll("#features-list li")).map(li => li.firstChild.textContent),
-                };
-
-                await updateItem("cars", updatedCar);
-                alert("Car details updated successfully!");
-                renderOwnerCars();
-            });
-
-            document.getElementById("add-feature-btn").addEventListener("click", () => {
-                const featureInput = document.getElementById("feature-input");
-                const feature = featureInput.value.trim();
-                if (feature) {
-                    const featureList = document.getElementById("features-list");
-                    const li = document.createElement("li");
-                    li.innerHTML = `${feature} <button type="button" onclick="removeFeature(this)">Remove</button>`;
-                    featureList.appendChild(li);
-                    featureInput.value = "";
-                }
-            });
-        }
-
-        window.removeFeature = function (button) {
-            const li = button.parentElement;
-            li.remove();
-        }
-        document.addEventListener("DOMContentLoaded", () => {
-            if (checkAuth && userId && role == 'owner') {
-                updateNavLinks();
-                renderOwnerCars();
-                // populateCategoryOptions();
-                document.getElementById('logout-link').addEventListener('click', (event) => {
-                    event.preventDefault();
-                    logout();
-                });
-            } else {
-                window.location.href = './index.html';
-            }
-        });
-    </script>
+    <script type="module" src="../js/app/view-cars.js">
+           </script>
 </body>
 
 </html>
