@@ -162,7 +162,7 @@ tbody tr:hover {
     cursor: pointer;
 }
 
-.cancel-button {
+.reject-btn {
     font-size: 13px;
     background: linear-gradient(135deg, #d9534f, #c9302c);
     color: white;
@@ -173,9 +173,30 @@ tbody tr:hover {
     margin-left: 5px;
 }
 
-.cancel-button:hover {
+.reject-btn:hover {
     background: linear-gradient(135deg, #c9302c, #d9534f);
 }
+
+.accept-btn {
+    font-size: 13px;
+    background: linear-gradient(135deg, #28a745, #218838);
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.action-buttons {
+    display: flex;
+    
+}
+
+.accept-btn:hover {
+    background: linear-gradient(135deg, #218838, #28a745);
+}
+
 
 .error-message {
     color: red;
@@ -229,6 +250,27 @@ tbody tr:hover {
     border-radius: 5px;
     transition: background 0.3s, transform 0.2s;
     font-weight: 500;
+}
+
+.pagination {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.pagination button {
+    padding: 5px 10px;
+    margin: 5px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.pagination button:disabled {
+    background: gray;
+    cursor: not-allowed;
 }
 
 .sidebar ul li a:hover {

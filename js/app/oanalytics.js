@@ -16,13 +16,21 @@ async function initAnalytics() {
     const bookings = await getItemsByTimeRange("bookings", "ownerId", userId, days);
     const bids = await getItemsByTimeRange("bids", "ownerId", userId, days);
     const cars = await getAllItemsByIndex("cars", "ownerId", userId);
+    displayTotals({ bookings, bids, cars });
     generateCharts({ bookings, bids, cars });
     document.getElementById("time-range").addEventListener("change", async (event) => {
         const days = parseInt(event.target.value, 10);
         const filteredBookings = await getItemsByTimeRange("bookings", "ownerId", userId, days);
         const filteredBids = await getItemsByTimeRange("bids", "ownerId", userId, days);
+        displayTotals({ bookings: filteredBookings, bids: filteredBids, cars });
         generateCharts({ bookings: filteredBookings, bids: filteredBids, cars });
     });
+}
+
+function displayTotals({ bookings, bids, cars }) {
+    document.getElementById("totalCarsCount").textContent = cars.length;
+    document.getElementById("totalBiddingsCount").textContent = bids.length;
+    document.getElementById("totalBookingsCount").textContent = bookings.length;
 }
 
 function generateCharts({ bookings, bids, cars }) {
@@ -35,7 +43,10 @@ function generateCharts({ bookings, bids, cars }) {
     createChart("bidsVsBookingsChart", "bar", getBidsVsBookings(bids, bookings), "Bids vs Bookings");
     createChart("popularCarCategoriesChart", "bar", getPopularCarCategories(cars), "Popular Car Categories");
     createChart("avgBidAmountChart", "bar", getAvgBidAmountPerCar(bids), "Average Bid Amount Per Car");
-    createChart("mostActiveRentersChart", "bar", getMostActiveRenters(bookings), "Most Active Renters");
+    createChart("mostActiveRentersChart", "bar", getMostActiveRenters(bookings), "Frequently Booking Users");
+    createChart("totalRevenueOverTimeChart", "line", getTotalRevenueOverTime(bookings, bids), "Total Revenue Over Time");
+    createChart("avgRevenuePerCarChart", "bar", getAvgRevenuePerCar(bookings), "Average Revenue Per Car");
+    
 }
 
 function createChart(id, type, data, title) {
@@ -168,6 +179,41 @@ function getMostActiveRenters(bookings) {
     bookings.forEach(b => data[b.username] = (data[b.username] || 0) + 1);
 
     return { labels: Object.keys(data), datasets: [{ label: "Bookings", data: Object.values(data), backgroundColor: "pink" }] };
+}
+
+function getTotalRevenueOverTime(bookings, bids) {
+    const revenue = {};
+    bookings.forEach(b => {
+        const date = new Date(b.createdAt).toISOString().split("T")[0];
+        revenue[date] = (revenue[date] || 0) + b.bidPrice;
+    });
+    bids.forEach(b => {
+        const date = new Date(b.createdAt).toISOString().split("T")[0];
+        revenue[date] = (revenue[date] || 0) + b.bidAmount;
+    });
+    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue ($)", data: Object.values(revenue), borderColor: "blue", fill: false }] };
+}
+
+function getAvgRevenuePerCar(bookings) {
+    const revenue = {};
+    bookings.forEach(b => {
+        revenue[b.carName] = (revenue[b.carName] || 0) + b.bidPrice;
+    });
+    const carNames = Object.keys(revenue);
+    const avgRevenue = carNames.map(car => revenue[car]);
+    return { labels: carNames, datasets: [{ label: "Avg. Revenue ($)", data: avgRevenue, backgroundColor: "green" }] };
+}
+
+function getTotalBookings(bookings) {
+    return { labels: ["Total Bookings"], datasets: [{ data: [bookings.length], backgroundColor: ["purple"] }] };
+}
+
+function getTotalBiddings(bids) {
+    return { labels: ["Total Biddings"], datasets: [{ data: [bids.length], backgroundColor: ["orange"] }] };
+}
+
+function getTotalCars(cars) {
+    return { labels: ["Total Cars"], datasets: [{ data: [cars.length], backgroundColor: ["red"] }] };
 }
 
 async function updateNavLinks() {

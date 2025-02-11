@@ -144,7 +144,7 @@ function renderPendingBids() {
             <td>${bid.username}</td>
             <td>${bid.from}</td>
             <td>${bid.to}</td>
-            <td>
+            <td class="action-buttons">
                 <button class="accept-btn" data-id="${bid.bidId}">Accept</button>
                 <button class="reject-btn" data-id="${bid.bidId}">Reject</button>
             </td>
@@ -168,6 +168,8 @@ function renderPendingBids() {
             await rejectBid(bidId);
         });
     });
+    togglePaginationButtons("pending-pagination", currentPendingPage, pendingBids.length);
+
 }
 
 function renderBookings() {
@@ -197,8 +199,9 @@ function renderBookings() {
         </tr>`;
         tableBody.innerHTML += row;
     });
-
+    togglePaginationButtons("bookings-pagination", currentAllBidsPage, allBids.length);
     document.getElementById("bookings-page-info").textContent = `Page ${currentBookingsPage} of ${Math.ceil(bookings.length / itemsPerPage)}`;
+
 }
 
 function renderAllBids() {
@@ -231,6 +234,23 @@ function renderAllBids() {
     });
 
     document.getElementById("all-bids-page-info").textContent = `Page ${currentAllBidsPage} of ${Math.ceil(allBids.length / itemsPerPage)}`;
+    togglePaginationButtons("all-bids-pagination", currentAllBidsPage, allBids.length);
+}
+
+function togglePaginationButtons(paginationId, currentPage, totalItems) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const paginationControls = document.getElementById(paginationId);
+    const prevButton = paginationControls.querySelector("button:first-child");
+    const nextButton = paginationControls.querySelector("button:last-child");
+
+    prevButton.disabled = currentPage === 1;
+    nextButton.disabled = currentPage === totalPages;
+
+    if (totalPages <= 1) {
+        paginationControls.classList.add("hidden");
+    } else {
+        paginationControls.classList.remove("hidden");
+    }
 }
 
 function highlightActiveLink() {

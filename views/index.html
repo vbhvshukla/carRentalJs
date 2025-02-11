@@ -197,17 +197,24 @@
 
         .carousel {
             position: relative;
+            /* added new 11-02-2025 */
+            overflow:hidden;
+            border-radius: 8px;
         }
 
         .carousel-images {
             display: flex;
-            overflow: hidden;
+              /* added new 11-02-2025 */
+            /* overflow: hidden; */
+            transition: transform 0.5s ease;
         }
 
         .carousel-image {
             min-width: 100%;
             transition: opacity 0.5s ease;
             opacity: 0;
+            height: 200px;
+            object-fit: contain;
         }
 
         .carousel-image.active {
@@ -226,6 +233,7 @@
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             transition: background-color 0.3s;
+            z-index:10
         }
 
         .carousel-button:hover {
@@ -245,6 +253,9 @@
         }
 
         .car-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             font-size: 1.5rem;
             color: #2c3e50;
             margin: 10px 0;
@@ -376,7 +387,7 @@
                     <div class="form-group">
                         <label for="car-category">Car Category:</label>
                         <select id="car-category" name="car-category">
-                            <option value="">Select Category</option>
+                            <option value="">All Category</option>
                         </select>
                     </div>
                     <h3>Filter by</h3>

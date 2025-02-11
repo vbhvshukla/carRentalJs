@@ -1,4 +1,4 @@
-import { getAllItems, addItem } from "../js/utils/dbUtils.js";
+import { getAllItems, addItem,getItemByKey } from "../js/utils/dbUtils.js";
 import { getCookie } from "../js/utils/cookie.js";
 import { checkAuth, logout } from "../js/utils/auth.js";
 import { generateRandomId } from "../js/utils/generateId.js";

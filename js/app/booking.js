@@ -2,9 +2,13 @@ import { getItemByKey, getAllItemsByIndex, addItem, updateItem } from "../utils/
 import { generateRandomId } from "../utils/generateId.js";
 import { getCookie } from "../utils/cookie.js";
 import { checkAuth, logout } from "../utils/auth.js";
+import { showToast } from "../utils/toastUtils.js";
 
+
+
+const carId = getCarIdFromURL();
 const userId = getCookie("userId");
-if (!userId) window.location.href = "./login.html";
+if (!userId) window.location.href = `./login.html?carId=${carId}`;
 
 function getCarIdFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -25,18 +29,18 @@ async function renderCarDetails() {
     totalPriceDiv.style.display = "none";
     const carId = getCarIdFromURL();
     if (!carId) {
-        alert("Car not found.");
+        showToast("Car not found.","error");
         return;
     }
 
     const car = await getItemByKey("cars", carId);
     if (!car) {
-        alert("Car not found.");
+        showToast("Car not found.","error");
         return;
     }
 
     if (car.ownerId === userId) {
-        alert("You cannot book your own car.");
+        showToast("You cannot book your own car.","error");
         window.location.href = "./index.html";
         return;
     }
@@ -70,24 +74,24 @@ async function renderCarDetails() {
         );
 
         if (isOverlapping) {
-            alert("This car is already booked for the selected dates. Please choose a different date range.");
+            showToast("This car is already booked for the selected dates. Please choose a different date range.","error");
             return;
         }
         if (!startDate || !endDate || !bidAmount) {
-            alert("Please fill all fields.");
+            showToast("Please fill all fields.","error");
             return;
         }
 
-        if (new Date(startDate) < new Date()) return alert("Start date cannot be before today's date.");
+        if (new Date(startDate) < new Date()) return showToast("Start date cannot be before today's date.","error");
 
 
         if (new Date(startDate) >= new Date(endDate)) {
-            alert("Start date must be before end date.");
+            showToast("Start date must be before end date.","error");
             return;
         }
 
         if (bidAmount < car.basePrice) {
-            alert("Your bid must be higher than the base price of the car!");
+            showToast("Your bid must be higher than the base price of the car!","error");
             return;
         }
 
@@ -98,7 +102,7 @@ async function renderCarDetails() {
             carId,
             carName: car.carName,
             ownerId: car.ownerId,
-            categoryId : car.categoryId,
+            categoryId: car.categoryId,
             ownerName: car.ownerName,
             bidAmount,
             from: startDate,
@@ -108,7 +112,7 @@ async function renderCarDetails() {
         };
 
         await addItem("bids", bid);
-        alert("Bid placed successfully!");
+        showToast("Bid placed successfully!","info");
         window.location.href = "./mybiddings.html";
     });
 
@@ -118,9 +122,9 @@ async function renderCarDetails() {
         const bidAmount = parseFloat(document.getElementById("bid-amount").value);
         const totalPriceDiv = document.getElementById("total-price-container");
 
-        if (startDate && endDate && new Date(startDate) < new Date(endDate)) {
+        if (startDate && endDate && new Date(startDate) <= new Date(endDate)) {
             const overlappingBids = await getOverlappingBids(carId, startDate, endDate);
-            const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+            const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
             const price = bidAmount || car.basePrice;
             const totalPrice = days * price;
             document.getElementById('total-price').textContent = totalPrice.toFixed(2);
@@ -279,7 +283,7 @@ async function disableBookedDates(carId) {
     });
 
     startDateInput.addEventListener("input", function () {
-        endDateInput.disabled = false; 
+        endDateInput.disabled = false;
         endDateInput.min = this.value;
 
         const selectedStartDate = new Date(this.value);
@@ -298,8 +302,8 @@ async function disableBookedDates(carId) {
 
         this.addEventListener("change", function () {
             if (disabledDates.has(this.value)) {
-                alert("This date is already booked. Please select a different date.");
-                this.value = ""; 
+                showToast("This date is already booked. Please select a different date.","error");
+                this.value = "";
             }
         });
     });
@@ -307,12 +311,13 @@ async function disableBookedDates(carId) {
     endDateInput.addEventListener("focus", function () {
         this.addEventListener("change", function () {
             if (disabledDates.has(this.value)) {
-                alert("This date is already booked. Please select a different date.");
-                this.value = ""; 
+                showToast("This date is already booked. Please select a different date.","error");
+                this.value = "";
             }
         });
     });
 }
+
 renderCarDetails();
 updateNavLinks();
 document.getElementById('logout-link').addEventListener('click', (event) => {
@@ -325,14 +330,18 @@ document.getElementById("send-chat-message-btn").addEventListener("click", funct
     const file = document.getElementById("chat-file-input").files[0];
 
     if (!message && !file) {
-        alert("Please enter a message or select a file.");
+        showToast("Please enter a message or select a file.","error");
         event.preventDefault();
     }
 });
 
 document.getElementById('bid-amount').addEventListener('input', function () {
-    if (this.value < 0) {
-        alert("Please enter a valid number");
+    if (this.value.includes('-')) {
+        showToast("Please enter a valid number", "error");
+        this.value = '';
+    }
+    else if (parseFloat(this.value) > 1000) {
+        showToast("Bid amount cannot exceed 1000", "error");
         this.value = '';
     }
 });

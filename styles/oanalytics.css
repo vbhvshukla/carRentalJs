@@ -71,10 +71,43 @@ body {
 }
 
 .analytics-section {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-wrap: wrap;
     gap: 20px;
     padding: 20px;
+}
+
+.cards-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.card {
+    flex: 1;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.card h3 {
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    color: #2c3e50;
+}
+
+.card p {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #3498db;
+}
+
+.chart-container {
+    flex: 1;
+    min-width: 45%;
+    height: 400px;
 }
 
 .analytics-section canvas {
@@ -147,11 +180,10 @@ body {
 }
 
 .analytics-section canvas:hover {
-    transform: scale(2.1);
+    transform: scale(1.2);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
     cursor: pointer;
 }
-
 
 .sidebar ul li a.active {
     background: #3498db;

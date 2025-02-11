@@ -54,7 +54,7 @@ cities.forEach(city => {
 
 addFeatureBtn.addEventListener("click", () => {
     const feature = featureInput.value.trim();
-    const existingFeatures = Array.from(featuresList.children).map(li => li.textContent.trim());
+    const existingFeatures = Array.from(featuresList.children).map(li => li.firstChild.textContent.trim());
 
     if (!feature || existingFeatures.includes(feature)) {
         alert("Feature is empty or already added!");
@@ -63,12 +63,14 @@ addFeatureBtn.addEventListener("click", () => {
 
     if (featuresList.children.length < 3) {
         const li = document.createElement("li");
-        li.textContent = feature;
+        const span = document.createElement("span");
+        span.textContent = feature;
         const removeBtn = document.createElement("button");
         removeBtn.textContent = "Remove";
         removeBtn.addEventListener("click", () => {
             featuresList.removeChild(li);
         });
+        li.appendChild(span);
         li.appendChild(removeBtn);
         featuresList.appendChild(li);
         featureInput.value = "";
@@ -76,7 +78,6 @@ addFeatureBtn.addEventListener("click", () => {
         alert("You can add a maximum of 3 features.");
     }
 });
-
 async function readFiles(files) {
     const filePromises = Array.from(files).map(file => readFileAsDataURL(file));
     return Promise.all(filePromises);
@@ -156,7 +157,7 @@ document.getElementById('add-car-form').addEventListener('submit', async functio
     const description = document.getElementById('description').value.trim();
     // const availability = document.getElementById('availability').value.trim().toLowerCase();
     const carType = document.getElementById('car-type').value.trim().toLowerCase();
-    const features = Array.from(featuresList.children).map(li => li.textContent.trim());
+    const features = Array.from(featuresList.children).map(li => li.querySelector('span').textContent.trim());
 
     if (selectedImages.length === 0) {
         alert("Please upload at least one image.");

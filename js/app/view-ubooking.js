@@ -166,29 +166,41 @@ async function loadUserBookings(page = 1, filters = {}) {
     const tableBody = document.querySelector("#booking-table tbody");
     tableBody.innerHTML = "";
 
-    bookings.forEach(booking => {
-        const chatId = `${userId}_${booking.ownerId}_${booking.carId}`;
-        const endDate = new Date(booking.to);
-        const today = new Date();
-        const showRatingButton = today > endDate;
+    if (bookings.length === 0) {
         const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${booking.bookingId}</td>
-            <td>${booking.carName}</td>
-            <td>${booking.ownerName}</td>
-            <td>$${booking.bidPrice}</td>
-            <td>${booking.from}</td>
-            <td>${booking.to}</td>
-            <td>${booking.createdAt}</td>
-            <td>$${booking.totalAmount.toFixed(2)}</td>
-            <td>
-                <button class="chat-button" onclick="redirectToChat('${chatId}')">Chat</button>
-                <button class="cancel-button" onclick="cancelBooking('${booking.bookingId}')">Cancel</button>
-                ${showRatingButton ? `<button class="rate-button" onclick="openRatingModal('${booking.carId}', '${booking.carName}')">Rate Car</button>` : ""}
-            </td>
-        `;
+        const cell = document.createElement("td");
+        cell.colSpan = 9;
+        cell.textContent = "No bookings";
+        cell.style.textAlign = "center";
+        row.appendChild(cell);
         tableBody.appendChild(row);
-    });
+    } else {
+        bookings.forEach(booking => {
+            const chatId = `${userId}_${booking.ownerId}_${booking.carId}`;
+            const endDate = new Date(booking.to);
+            const today = new Date();
+            const showRatingButton = today > endDate;
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${booking.bookingId}</td>
+                <td>${booking.carName}</td>
+                <td>${booking.ownerName}</td>
+                <td>$${booking.bidPrice}</td>
+                <td>${booking.from}</td>
+                <td>${booking.to}</td>
+                <td>${booking.createdAt}</td>
+                <td>$${booking.totalAmount.toFixed(2)}</td>
+                <td>
+                    <button class="chat-button" onclick="redirectToChat('${chatId}')">Chat</button>
+                    <button class="cancel-button" onclick="cancelBooking('${booking.bookingId}')">Cancel</button>
+                    ${showRatingButton ? `<button class="rate-button" onclick="openRatingModal('${booking.carId}', '${booking.carName}')">Rate Car</button>` : ""}
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    updatePaginationControls(page, allBookings.length);
 }
 
 function openRatingModal(carId, carName) {

@@ -1,4 +1,6 @@
-import { getCookie,setCookie } from "./cookie.js";
+import { getCookie, setCookie } from "./cookie.js";
+import { getItemByKey } from "./dbUtils.js";
+
 function checkAuth() {
     const userId = getCookie("userId");
     if (!userId || userId == null) {
@@ -16,4 +18,18 @@ function logout() {
     window.location.href = "./index.html";
 }
 
-export { checkAuth ,logout};
+async function checkAdmin() {
+    const userId = getCookie("userId");
+    if (!userId) return false;
+    const user = await getItemByKey("users", userId);
+    return user && user.role === "admin";
+}
+
+async function checkOwnerApproved() {
+    const userId = getCookie("userId");
+    if (!userId) return false;
+    const user = await getItemByKey("users", userId);
+    return user && user.role === "owner" && user.isApproved;
+}
+
+export { checkAuth, logout, checkAdmin, checkOwnerApproved };

@@ -4,7 +4,7 @@ import { getCookie } from "../utils/cookie.js";
 
 const userId = getCookie("userId");
 
-if(userId){
+if (userId) {
     const user = getItemByKey("users", userId);
     if (user.role === "admin") {
         console.log("Something")
@@ -56,7 +56,6 @@ function redirectToBookingPage(carId) {
 function createCarCard(car) {
     const card = document.createElement("div");
     card.className = "car-card";
-
     const carousel = document.createElement("div");
     carousel.className = "carousel";
 
@@ -83,56 +82,58 @@ function createCarCard(car) {
     carousel.appendChild(prevButton);
     carousel.appendChild(nextButton);
 
-    const carDetails = `
-<div class="car-details">
-    <h3 class="car-name">${car.carName}</h3>
-    <div class="car-features">
-        ${car.featured.map((feature) => `<span class="feature">${feature}</span>`).join("")}
-    </div>
-    <div class="rating-container">
-        <div class="car-rating">
-            <span class="stars">${generateStarRating(car.avgRating)}</span>
-            <span class="rating-count">(${car.avgRating.toFixed(1)}/5, ${car.ratingCount || "0"} reviews)</span>
-        </div>
-    </div>
-    <div class="user-info">
-        <svg class="user-icon" viewBox="0 0 24 24" width="16" height="16">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-        </svg>
-        <span class="user-name">${car.ownerName}</span>
-    </div>
-    <div class="car-price-city">
-        <span class="price">$${car.basePrice}/day</span>
-        <span class="city">${car.city}</span>
-    </div>
-    <button class="book-now-btn">Book Now</button>
-</div>
-`;
-
-    card.appendChild(carousel);
-    card.innerHTML += carDetails;
-
-    const bookNowButton = card.querySelector(".book-now-btn");
-    bookNowButton.addEventListener("click", () => redirectToBookingPage(car.carId));
-
     let currentImageIndex = 0;
-    const images = carouselImages.querySelectorAll(".carousel-image");
 
     function updateCarousel(index) {
+        const images = carouselImages.querySelectorAll(".carousel-image");
         images.forEach((img, i) => {
             img.classList.toggle("active", i === index);
         });
     }
 
     prevButton.addEventListener("click", () => {
+        const images = carouselImages.querySelectorAll(".carousel-image");
         currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
         updateCarousel(currentImageIndex);
     });
 
     nextButton.addEventListener("click", () => {
+        const images = carouselImages.querySelectorAll(".carousel-image");
         currentImageIndex = (currentImageIndex + 1) % images.length;
         updateCarousel(currentImageIndex);
     });
+
+    const carDetails = `
+        <div class="car-details">
+            <h3 class="car-name">${car.carName}</h3>
+            <div class="car-features">
+                ${car.featured.map((feature) => `<span class="feature">${feature}</span>`).join("")}
+            </div>
+            <div class="rating-container">
+                <div class="car-rating">
+                    <span class="stars">${generateStarRating(car.avgRating)}</span>
+                    <span class="rating-count">(${car.avgRating.toFixed(1)}/5, ${car.ratingCount || "0"} reviews)</span>
+                </div>
+            </div>
+            <div class="user-info">
+                <svg class="user-icon" viewBox="0 0 24 24" width="16" height="16">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <span class="user-name">${car.ownerName}</span>
+            </div>
+            <div class="car-price-city">
+                <span class="price">$${car.basePrice}/day</span>
+                <span class="city">${car.city}</span>
+            </div>
+            <button class="book-now-btn">Book Now</button>
+        </div>
+    `;
+
+    card.appendChild(carousel);
+    card.innerHTML += carDetails;
+
+    const bookNowButton = card.querySelector(".book-now-btn");
+    bookNowButton.addEventListener("click", () => redirectToBookingPage(car.carId));
 
     return card;
 }
@@ -178,7 +179,7 @@ async function updateCarAvailability() {
 
 async function getAvailableCars() {
     const allCars = await getAllItems("cars");
-    features = [...new Set(allCars.flatMap((car)=>car.featured))]
+    features = [...new Set(allCars.flatMap((car) => car.featured))];
     populateFeaturesDatalist(features);
     return allCars.filter(car => car.availability === "Available" || "available" && !car.isDeleted);
 }
@@ -288,24 +289,6 @@ async function populateCategoryOptions() {
     });
 }
 
-window.prevImage = function (button) {
-    const carousel = button.closest(".carousel");
-    const images = carousel.querySelectorAll(".carousel-image");
-    let activeIndex = Array.from(images).findIndex(img => img.classList.contains("active"));
-    images[activeIndex].classList.remove("active");
-    activeIndex = (activeIndex - 1 + images.length) % images.length;
-    images[activeIndex].classList.add("active");
-};
-
-window.nextImage = function (button) {
-    const carousel = button.closest(".carousel");
-    const images = carousel.querySelectorAll(".carousel-image");
-    let activeIndex = Array.from(images).findIndex(img => img.classList.contains("active"));
-    images[activeIndex].classList.remove("active");
-    activeIndex = (activeIndex + 1) % images.length;
-    images[activeIndex].classList.add("active");
-};
-
 window.updatePriceRangeValue = function (value) {
     document.getElementById('price-range-value').textContent = value;
 }
@@ -341,7 +324,6 @@ document.getElementById('logout-link').addEventListener('click', (event) => {
     event.preventDefault();
     logout();
 });
-
 
 updateCarAvailability().then(() => {
     renderCars();

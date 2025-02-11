@@ -1,43 +1,60 @@
 import { getAllItems, getAllItemsByTimeRange, getItemByKey, updateItem } from "../utils/dbUtils.js";
-import { checkAuth, logout } from "../utils/auth.js";
-import { getCookie } from "../utils/cookie.js";
+import { checkAuth, checkAdmin } from "../utils/auth.js";
+import { getCookie, setCookie } from "../utils/cookie.js";
 
 const userId = getCookie("userId");
-if(!userId){
-    window.location.href="./index.html";
+if (!userId) {
+    window.location.href = "../views/login.html";
 }
-const user = await getItemByKey("users", userId);
-if (!user || user.role !== "admin") {
-    window.location.href = "./login.html";
+
+const isAdmin = await checkAdmin();
+if (!isAdmin) {
+    window.location.href = "../views/index.html";
 }
 
 let chartInstances = {};
 
 async function initAnalytics() {
     const days = parseInt(document.getElementById("time-range").value, 10);
+    const users = await getAllItems("users");
     const cars = await getAllItems("cars");
     const categories = await getAllItems("categories");
     const bookings = await getAllItemsByTimeRange("bookings", "createdAt", days);
     const bids = await getAllItemsByTimeRange("bids", "createdAt", days);
-    generateCharts({ bookings, bids, cars, categories,days });
+    displayTotals({ users, bookings, bids, cars });
+    generateCharts({ bookings, bids, cars, categories, users, days });
     document.getElementById("time-range").addEventListener("change", async (event) => {
         const days = parseInt(event.target.value, 10);
         const filteredBookings = await getAllItemsByTimeRange("bookings", "createdAt", days);
         const filteredBids = await getAllItemsByTimeRange("bids", "createdAt", days);
-        generateCharts({ bookings: filteredBookings, bids: filteredBids, cars, categories });
+        displayTotals({ users, bookings: filteredBookings, bids: filteredBids, cars });
+        generateCharts({ bookings: filteredBookings, bids: filteredBids, cars, categories, users, days });
     });
 }
 
+function displayTotals({ users, bookings, bids, cars }) {
+    document.getElementById("totalUsersCount").textContent = users.length;
+    document.getElementById("totalBookingsCount").textContent = bookings.length;
+    document.getElementById("totalBiddingsCount").textContent = bids.length;
+    document.getElementById("totalCarsCount").textContent = cars.length;
+    document.getElementById("top3Bidders").textContent = getTop3BiddersText(bids);
+}
 
-function generateCharts({ bookings, bids, cars, categories ,days}) {
+function getTop3BiddersText(bids) {
+    const counts = {};
+    bids.forEach(b => counts[b.username] = (counts[b.username] || 0) + 1);
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    return sorted.map(c => `${c[0]} (${c[1]})`).join(", ");
+}
+
+function generateCharts({ bookings, bids, cars, categories, users, days }) {
+    createChart("averageRevenuePerUserChart", "bar", getAverageRevenuePerUser(bookings, bids, users), "Average Revenue Per User");
     createChart("carsPerCategoryChart", "bar", getCarsPerCategory(cars, categories), "Cars Per Category");
     createChart("highestRatedCarCategoryWiseChart", "bar", getHighestRatedCarCategoryWise(cars, categories), "Highest Rated Car Category Wise");
     createChart("bidsPerCategoryChart", "bar", getBidsPerCategory(bids, categories), "Bids Per Category");
     createChart("totalBiddedPricePerCategoryChart", "bar", getTotalBiddedPricePerCategory(bids, categories), "Total Bidded Price Per Category");
     createChart("carsPerCityChart", "pie", getCarsPerCity(cars), "Cars Per City");
     createChart("top3BiddersChart", "bar", getTop3Bidders(bids), "Top 3 Bidders");
-    // createChart("leastBiddedCategoryChart", "bar", getLeastBiddedCategory(bids, categories), "Least Bidded Category");
-    // createChart("leastBookedCategoryChart", "bar", getLeastBookedCategory(bookings, categories), "Least Booked Category");
     createChart("totalRevenuePerCategoryChart", "bar", getTotalRevenuePerCategory(bookings, bids, categories), "Total Revenue Per Category");
     createChart("totalRevenuePerCityChart", "bar", getTotalRevenuePerCity(bookings, bids, cars), "Total Revenue Per City");
     createChart("bookingsOverTimeChart", "line", getBookingsOverTime(bookings, days), "Bookings Over Time");
@@ -204,6 +221,25 @@ function getBookingsOverTime(bookings, days) {
     });
 
     return { labels: Object.keys(counts), datasets: [{ label: "Bookings", data: Object.values(counts), backgroundColor: "blue", borderColor: "blue", fill: false }] };
+}
+
+function getAverageRevenuePerUser(bookings, bids, users) {
+    const revenue = {};
+    bookings.forEach(b => revenue[b.userId] = (revenue[b.userId] || 0) + b.bidPrice);
+    bids.forEach(b => revenue[b.userId] = (revenue[b.userId] || 0) + b.bidAmount);
+    const userIds = Object.keys(revenue);
+    const avgRevenue = userIds.map(userId => revenue[userId]);
+    const userNames = userIds.map(userId => users.find(user => user.userId === userId).username);
+    return { labels: userNames, datasets: [{ label: "Avg. Revenue ($)", data: avgRevenue, backgroundColor: "green" }] };
+}
+
+function logout() {
+    const cookies = document.cookie.split("; ");
+    for (let i = 0; i < cookies.length; i++) {
+        const [name] = cookies[i].split("=");
+        setCookie(name, "", -1); 
+    }
+    window.location.href = "../views/index.html";
 }
 
 async function updateNavLinks() {
