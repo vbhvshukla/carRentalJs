@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard :: My Biddings</title>
-   <link rel="stylesheet" href="../styles/mybiddings.css">
+    <link rel="stylesheet" href="../styles/mybiddings.css">
 </head>
 
 <body>
@@ -26,7 +26,7 @@
             <div class="sidebar">
                 <h3>User Dashboard</h3>
                 <ul>
-                    <li><a href="./udashboard.html">🏠 Dashboard</a></li>
+                    <li><a href="./udashboard.html">🏠 My Profile</a></li>
                     <li><a href="./view-ubooking.html">📅 My Bookings</a></li>
                     <li><a href="./view-umessages.html">✉️ My Messages</a></li>
                     <li><a href="./mybiddings.html">💰 My Biddings</a></li>
@@ -43,7 +43,6 @@
                             <th>End Date</th>
                             <th>Placed At</th>
                             <th>Total Amount</th>
-
                             <th>
                                 Status
                                 <select id="status-sort" onchange="filterByStatus()">
@@ -57,11 +56,12 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    
-                    <tbody></tbody>
-                    
+                    <tbody>
+                        <tr id="no-biddings-row" class="hidden">
+                            <td colspan="9" class="no-biddings">No biddings exist.</td>
+                        </tr>
+                    </tbody>
                 </table>
-                <p id="no-biddings" class="no-messages hidden">No biddings exist.</p>
             </div>
         </div>
         <div id="toast-container"></div>
@@ -71,9 +71,7 @@
         </div>
     </div>
 
-    <script type="module" src="../js/app/mybiddings.js">
-        
-    </script>
+    <script type="module" src="../js/app/mybiddings.js"></script>
 </body>
 
 </html>

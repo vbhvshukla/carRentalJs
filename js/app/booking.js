@@ -85,7 +85,7 @@ async function renderCarDetails() {
         if (new Date(startDate) < new Date()) return showToast("Start date cannot be before today's date.","error");
 
 
-        if (new Date(startDate) >= new Date(endDate)) {
+        if (new Date(startDate) > new Date(endDate)) {
             showToast("Start date must be before end date.","error");
             return;
         }

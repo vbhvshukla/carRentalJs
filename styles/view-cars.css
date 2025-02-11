@@ -61,17 +61,21 @@
 .carousel {
     position: relative;
     width: 100%;
-    max-width: 500px;
+    height: 160px;
+    /* max-width: 500px; */
     overflow: hidden;
 }
 
 .carousel-images {
     display: flex;
     transition: transform 0.5s ease;
+    height:100%;
 }
 
 .carousel-image {
+    height:100%;
     min-width: 100%;
+    object-fit: cover;
     transition: opacity 0.5s ease;
 }
 

@@ -70,19 +70,10 @@ function createCarCard(car) {
         carouselImages.appendChild(img);
     });
 
-    const prevButton = document.createElement("button");
-    prevButton.className = "carousel-button prev";
-    prevButton.innerHTML = "&#10094;";
-
-    const nextButton = document.createElement("button");
-    nextButton.className = "carousel-button next";
-    nextButton.innerHTML = "&#10095;";
-
     carousel.appendChild(carouselImages);
-    carousel.appendChild(prevButton);
-    carousel.appendChild(nextButton);
 
     let currentImageIndex = 0;
+    let carouselInterval;
 
     function updateCarousel(index) {
         const images = carouselImages.querySelectorAll(".carousel-image");
@@ -91,17 +82,20 @@ function createCarCard(car) {
         });
     }
 
-    prevButton.addEventListener("click", () => {
-        const images = carouselImages.querySelectorAll(".carousel-image");
-        currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
-        updateCarousel(currentImageIndex);
-    });
+    function startCarousel() {
+        carouselInterval = setInterval(() => {
+            const images = carouselImages.querySelectorAll(".carousel-image");
+            currentImageIndex = (currentImageIndex + 1) % images.length;
+            updateCarousel(currentImageIndex);
+        }, 3000); // Change image every 3 seconds
+    }
 
-    nextButton.addEventListener("click", () => {
-        const images = carouselImages.querySelectorAll(".carousel-image");
-        currentImageIndex = (currentImageIndex + 1) % images.length;
-        updateCarousel(currentImageIndex);
-    });
+    function stopCarousel() {
+        clearInterval(carouselInterval);
+    }
+
+    card.addEventListener("mouseenter", startCarousel);
+    card.addEventListener("mouseleave", stopCarousel);
 
     const carDetails = `
         <div class="car-details">

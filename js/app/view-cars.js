@@ -60,15 +60,47 @@ async function populateCategoryOptions() {
 function createCarCard(car) {
     const card = document.createElement("div");
     card.className = "car-card";
-    const carousel = `
-        <div class="carousel">
-            <div class="carousel-images">
-                ${car.images.map((image, index) => `<img src="${image}" alt="Car Image ${index + 1}" class="carousel-image ${index === 0 ? "active" : ""}">`).join("")}
-            </div>
-            <button class="carousel-button prev" onclick="prevImage(this)">&#10094;</button>
-            <button class="carousel-button next" onclick="nextImage(this)">&#10095;</button>
-        </div>
-    `;
+    const carousel = document.createElement("div");
+    carousel.className = "carousel";
+
+    const carouselImages = document.createElement("div");
+    carouselImages.className = "carousel-images";
+
+    car.images.forEach((image, index) => {
+        const img = document.createElement("img");
+        img.src = image;
+        img.alt = `Car Image ${index + 1}`;
+        img.className = `carousel-image ${index === 0 ? "active" : ""}`;
+        carouselImages.appendChild(img);
+    });
+
+    carousel.appendChild(carouselImages);
+    card.appendChild(carousel);
+
+    let currentImageIndex = 0;
+    let carouselInterval;
+
+    function updateCarousel(index) {
+        const images = carouselImages.querySelectorAll(".carousel-image");
+        images.forEach((img, i) => {
+            img.classList.toggle("active", i === index);
+        });
+    }
+
+    function startCarousel() {
+        carouselInterval = setInterval(() => {
+            const images = carouselImages.querySelectorAll(".carousel-image");
+            currentImageIndex = (currentImageIndex + 1) % images.length;
+            updateCarousel(currentImageIndex);
+        }, 3000); // Change image every 3 seconds
+    }
+
+    function stopCarousel() {
+        clearInterval(carouselInterval);
+    }
+
+    card.addEventListener("mouseenter", startCarousel);
+    card.addEventListener("mouseleave", stopCarousel);
 
     const carDetails = `
         <div class="car-details">
@@ -95,7 +127,7 @@ function createCarCard(car) {
             <button class="edit-car-btn">Edit Car</button>
         </div>
     `;
-    card.innerHTML = carousel + carDetails;
+    card.innerHTML += carDetails;
 
     const editCarButton = card.querySelector(".edit-car-btn");
     editCarButton.addEventListener("click", () => editCar(car));
@@ -216,14 +248,14 @@ function editCar(car) {
     document.getElementById("edit-car-form").addEventListener("submit", async function (event) {
         event.preventDefault();
         const categorySelect = document.getElementById("category");
-        const categoryId = categorySelect.value; 
+        const categoryId = categorySelect.value;
         const categoryName = categorySelect.options[categorySelect.selectedIndex].textContent;
 
         const updatedCar = {
             ...car,
             carName: document.getElementById("carName").value,
             basePrice: parseFloat(document.getElementById("basePrice").value),
-            availability : document.getElementById("availability").value.toLowerCase(),
+            availability: document.getElementById("availability").value.toLowerCase(),
             carType: document.getElementById("car-type").value,
             categoryId,
             categoryName,

@@ -155,7 +155,6 @@ document.getElementById('add-car-form').addEventListener('submit', async functio
     const city = document.getElementById('city').value.trim();
     const basePrice = parseFloat(document.getElementById('base-price').value.trim());
     const description = document.getElementById('description').value.trim();
-    // const availability = document.getElementById('availability').value.trim().toLowerCase();
     const carType = document.getElementById('car-type').value.trim().toLowerCase();
     const features = Array.from(featuresList.children).map(li => li.querySelector('span').textContent.trim());
 

@@ -32,12 +32,8 @@ function openDb() {
         const carStore = db.createObjectStore("cars", { keyPath: "carId" });
         carStore.createIndex("ownerId", "ownerId");
         carStore.createIndex("categoryId", "categoryId");
-        // carStore.createIndex("city", "city");
         carStore.createIndex("availability", "availability");
-        // carStore.createIndex("createdAt", "createdAt");
-        // initcars.forEach((car)=>{
-        //   carStore.put(car);
-        // })
+       
       }
 
       if (!db.objectStoreNames.contains("categories")) {
@@ -55,8 +51,6 @@ function openDb() {
         bookingStore.createIndex("userId", "userId");
         bookingStore.createIndex("carId", "carId");
         bookingStore.createIndex("ownerId", "ownerId");
-        // bookingStore.createIndex("status", "status");
-        // bookingStore.createIndex("createdAt", "createdAt");
       }
 
       if (!db.objectStoreNames.contains("messages")) {
@@ -64,12 +58,8 @@ function openDb() {
           keyPath: "messageId",
         });
         messageStore.createIndex("chatId", "chatId");
-        // messageStore.createIndex("hasAttatchment","hasAttatchment")
         messageStore.createIndex("fromUserId", "fromUserId");
         messageStore.createIndex("toUserId", "toUserId");
-        // messageStore.createIndex("forBookingId", "forBookingId");
-        // messageStore.createIndex("attachment", "attachment");
-
       }
 
       if (!db.objectStoreNames.contains("bids")) {
@@ -77,8 +67,6 @@ function openDb() {
         bidStore.createIndex("carId", "carId");
         bidStore.createIndex("userId", "userId");
         bidStore.createIndex("ownerId", "ownerId");
-        // bidStore.createIndex("status", "status");
-        // bidStore.createIndex("createdAt", "createdAt");
       }
 
       

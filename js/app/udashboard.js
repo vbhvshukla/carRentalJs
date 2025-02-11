@@ -52,8 +52,8 @@ import { getAllItemsByIndex, getItemByKey, updateItem } from "../utils/dbUtils.j
             if (user) {
                 document.getElementById("username").value = user.username;
                 document.getElementById("email").value = user.email;
-                document.getElementById("avgRating").textContent = user.avgRating;
-                document.getElementById("ratingCount").textContent = user.ratingCount;
+                document.getElementById("avgRating").textContent = user.avgRating || "N/A";
+                document.getElementById("ratingCount").textContent = user.ratingCoun || "N/A";
 
                 if (user.verificationFile) {
                     document.getElementById("verificationFile").innerHTML =
