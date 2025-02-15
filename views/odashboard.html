@@ -28,7 +28,7 @@
                     <li><a href="./odashboard.html">🏠 Dashboard</a></li>
                     <li><a href="./view-cars.html">🚗 My Cars</a></li>
                     <li><a href="./oanalytics.html">📊 Analytics</a></li>
-                    <li><a href="./view-omessages.html">📨 All Message</a></li>
+                    <li><a href="./view-omessages.html">📨 All Messages</a></li>
                     <li><a href="./add-car.html">➕ Add New Car</a></li>
                 </ul>
             </div>
@@ -36,6 +36,11 @@
             <div class="content">
                 <div class="container">
                     <h2>Pending Bids</h2>
+                    <select id="rental-type-sort-pending">
+                        <option value="all">All</option>
+                        <option value="local">Local</option>
+                        <option value="outstation">Outstation</option>
+                    </select>
                     <table id="pending-bids-table">
                         <thead>
                             <tr>
@@ -45,6 +50,7 @@
                                 <th>User</th>
                                 <th>From</th>
                                 <th>To</th>
+                                <th>Rental Type</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -57,8 +63,12 @@
                     </div>
                     <p id="no-pending-bids" class="hidden">No pending bids.</p>
 
-
                     <h2>Active Bookings</h2>
+                    <select id="rental-type-sort-bookings">
+                        <option value="all">All</option>
+                        <option value="local">Local</option>
+                        <option value="outstation">Outstation</option>
+                    </select>
                     <table id="bookings-table">
                         <thead>
                             <tr>
@@ -69,11 +79,13 @@
                                 <th>From</th>
                                 <th>To</th>
                                 <th>Created At</th>
+                                <th>Rental Type</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
-                    <div class="pagination"  id="bookings-pagination">
+                    <div class="pagination" id="bookings-pagination">
                         <button id="prev-bookings">Previous</button>
                         <span id="bookings-page-info"></span>
                         <button id="next-bookings">Next</button>
@@ -96,12 +108,13 @@
                                 <th>User</th>
                                 <th>From</th>
                                 <th>To</th>
+                                <th>Rental Type</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
-                    <div class="pagination" id="all-bids-pagination" >
+                    <div class="pagination" id="all-bids-pagination">
                         <button id="prev-all-bids">Previous</button>
                         <span id="all-bids-page-info"></span>
                         <button id="next-all-bids">Next</button>
@@ -116,12 +129,24 @@
         </div>
     </div>
 
-   
+    <!-- Modal for adding extra charges -->
+    <div id="extra-charges-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Extra Charges</h2>
+            <form id="extra-charges-form">
+                <label for="extraKmCharges">Extra Km Charges:</label>
+                <input type="number" id="extraKmCharges" name="extraKmCharges" step="0.01">
+                <label for="extraHourCharges">Extra Hour Charges:</label>
+                <input type="number" id="extraHourCharges" name="extraHourCharges" step="0.01">
+                <label for="extraDayCharges">Extra Day Charges:</label>
+                <input type="number" id="extraDayCharges" name="extraDayCharges" step="0.01">
+                <button type="submit">Update Total Amount</button>
+            </form>
+        </div>
     </div>
 
-    <script type="module" src="../js/app/odashboard.js">
-       
-    </script>
+    <script type="module" src="../js/app/odashboard.js"></script>
 </body>
 
 </html>

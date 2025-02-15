@@ -1,5 +1,5 @@
 import { getAllItemsByIndex, getItemByKey, updateItem, addItem, getAllItems } from "../utils/dbUtils.js";
-import { checkAuth, logout } from "../utils/auth.js";
+import { checkAuth, logout, getUser, checkOwnerApproved } from "../utils/auth.js";
 import { getCookie } from "../utils/cookie.js";
 import { generateRandomId } from "../utils/generateId.js";
 
@@ -29,64 +29,127 @@ async function updateNavLinks() {
     }
 }
 
-function calculateTotalAmount(bidAmount, fromDate, toDate) {
+function calculateTotalAmount(bid, fromDate, toDate) {
     const from = new Date(fromDate);
     const to = new Date(toDate);
     const diffTime = Math.abs(to - from);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return bidAmount * diffDays;
-}
 
+    if (bid.rentalType === "local") {
+        const totalHours = diffTime / (1000 * 60 * 60);
+        const baseFare = bid.car.rentalOptions.local.pricePerHour * totalHours;
+        const extraKmCharges = bid.extraKmCharges || 0;
+        const extraHourCharges = bid.extraHourCharges || 0;
+        return baseFare + extraKmCharges + extraHourCharges;
+    } else if (bid.rentalType === "outstation") {
+        const baseFare = bid.car.rentalOptions.outstation.pricePerDay * diffDays;
+        const extraKmCharges = bid.extraKmCharges || 0;
+        const extraDayCharges = bid.extraDayCharges || 0;
+        return baseFare + extraKmCharges + extraDayCharges;
+    }
+    return 0;
+}
 
 function isDateRangeOverlap(startDate1, endDate1, startDate2, endDate2) {
     return (startDate1 <= endDate2 && endDate1 >= startDate2);
 }
 
 async function getPendingBids() {
-    const bids = await getAllItemsByIndex("bids", "ownerId", userId);
-    return bids.filter(bid => bid.status.toLowerCase() === "pending");
+    const bids = await getAllItems("bids");
+    return bids.filter(bid => bid.status.toLowerCase() === "pending" && bid.car.owner.userId === userId);
 }
 
 async function acceptBid(acceptedBid) {
     try {
         const bids = await getPendingBids();
+
         const overlappingBids = bids.filter(bid =>
-            bid.carId === acceptedBid.carId &&
+            bid.car.carId === acceptedBid.car.carId &&
             bid.bidId !== acceptedBid.bidId &&
-            isDateRangeOverlap(new Date(bid.from), new Date(bid.to), new Date(acceptedBid.from), new Date(acceptedBid.to))
+            isDateRangeOverlap(new Date(bid.fromTimestamp), new Date(bid.toTimestamp), new Date(acceptedBid.fromTimestamp), new Date(acceptedBid.toTimestamp))
         );
 
-        acceptedBid.status = "Accepted";
+        acceptedBid.status = "accepted";
         await updateItem("bids", acceptedBid);
 
         for (const bid of overlappingBids) {
-            bid.status = "Rejected";
+            bid.status = "rejected";
             await updateItem("bids", bid);
         }
 
+        const totalFare = calculateTotalAmount(acceptedBid, acceptedBid.fromTimestamp, acceptedBid.toTimestamp);
+
         const booking = {
-            bid: acceptedBid.bidId,
             bookingId: generateRandomId(),
-            userId: acceptedBid.userId,
-            username: acceptedBid.username,
-            carId: acceptedBid.carId,
-            carName: acceptedBid.carName,
-            ownerId: acceptedBid.ownerId,
-            ownerName: acceptedBid.ownerName,
-            bidPrice: acceptedBid.bidAmount,
-            from: acceptedBid.from,
-            to: acceptedBid.to,
-            isValid: true,
-            createdAt: new Date().toISOString().split('T')[0]
+            fromTimestamp: acceptedBid.fromTimestamp,
+            toTimestamp: acceptedBid.toTimestamp,
+            status: "confirmed",
+            createdAt: new Date().toISOString(),
+            rentalType: acceptedBid.rentalType,
+            bid: {
+                bidId: acceptedBid.bidId,
+                fromTimestamp: acceptedBid.fromTimestamp,
+                toTimestamp: acceptedBid.toTimestamp,
+                status: acceptedBid.status,
+                createdAt: acceptedBid.createdAt,
+                bidAmount: acceptedBid.bidAmount,
+                rentalType: acceptedBid.rentalType,
+                bidBaseFare: acceptedBid.bidBaseFare,
+                user: {
+                    userId: acceptedBid.user.userId,
+                    username: acceptedBid.user.username,
+                    email: acceptedBid.user.email,
+                    role: acceptedBid.user.role,
+                    paymentPreference: acceptedBid.user.paymentPreference,
+                    avgRating: acceptedBid.user.avgRating,
+                    ratingCount: acceptedBid.user.ratingCount
+                },
+                car: {
+                    carId: acceptedBid.car.carId,
+                    carName: acceptedBid.car.carName,
+                    carType: acceptedBid.car.carType,
+                    city: acceptedBid.car.city,
+                    createdAt: acceptedBid.car.createdAt,
+                    description: acceptedBid.car.description,
+                    isAvailableForLocal: acceptedBid.car.isAvailableForLocal,
+                    isAvailableForOutstation: acceptedBid.car.isAvailableForOutstation,
+                    avgRating: acceptedBid.car.avgRating,
+                    ratingCount: acceptedBid.car.ratingCount,
+                    images: acceptedBid.car.images,
+                    featured: acceptedBid.car.featured,
+                    category: {
+                        categoryId: acceptedBid.car.category.categoryId,
+                        categoryName: acceptedBid.car.category.categoryName
+                    },
+                    owner: {
+                        userId: acceptedBid.car.owner.userId,
+                        username: acceptedBid.car.owner.username,
+                        email: acceptedBid.car.owner.email,
+                        role: acceptedBid.car.owner.role,
+                        isApproved: acceptedBid.car.owner.isApproved,
+                        avgRating: acceptedBid.car.owner.avgRating,
+                        ratingCount: acceptedBid.car.owner.ratingCount,
+                        paymentPreference: acceptedBid.car.owner.paymentPreference
+                    },
+                    rentalOptions: acceptedBid.car.rentalOptions
+                }
+            },
+            baseFare: acceptedBid.bidBaseFare,
+            extraKmCharges: 0,
+            extraHourCharges: 0,
+            totalFare: totalFare.toFixed(2) // Calculated total fare
         };
 
         await addItem("bookings", booking);
 
-        const car = await getItemByKey("cars", acceptedBid.carId);
-        car.availability = "unavailable";
-        await updateItem("cars", car);
+        const carAvailability = {
+            carId: acceptedBid.car.carId,
+            fromTimestamp: new Date(acceptedBid.fromTimestamp),
+            toTimestamp: new Date(acceptedBid.toTimestamp)
+        };
+        await addItem("carAvailability", carAvailability);
 
-        alert(`Accepted bid with ID: ${acceptedBid.bidId}`);
+        alert(`Accepted bid`);
         await fetchData();
     } catch (error) {
         console.error(`Error accepting bid with ID: ${acceptedBid.bidId}`, error);
@@ -97,7 +160,7 @@ async function acceptBid(acceptedBid) {
 async function rejectBid(bidId) {
     try {
         const bid = await getItemByKey("bids", bidId);
-        bid.status = "Rejected";
+        bid.status = "rejected";
         await updateItem("bids", bid);
         alert(`Rejected bid with ID: ${bidId}`);
         await fetchData();
@@ -113,14 +176,15 @@ const itemsPerPage = 5;
 
 async function fetchData() {
     pendingBids = await getPendingBids();
-    bookings = await getAllItemsByIndex("bookings", "ownerId", userId);
-    allBids = await getAllItemsByIndex("bids", "ownerId", userId);
+    bookings = await getAllItems("bookings");
+    bookings = bookings.filter(booking => booking.bid.car.owner.userId === userId);
+    allBids = await getAllItems("bids");
     renderPendingBids();
     renderBookings();
     renderAllBids();
 }
 
-function renderPendingBids() {
+async function renderPendingBids() {
     const tableBody = document.querySelector("#pending-bids-table tbody");
     tableBody.innerHTML = "";
     const start = (currentPendingPage - 1) * itemsPerPage;
@@ -135,15 +199,16 @@ function renderPendingBids() {
     }
 
     paginatedBids.forEach(bid => {
-        const totalAmount = calculateTotalAmount(bid.bidAmount, bid.from, bid.to);
-
+        const totalAmount = calculateTotalAmount(bid, bid.fromTimestamp, bid.toTimestamp);
+        const rentalTypeLabel = bid.rentalType === "local" ? "Local" : "Outstation";
         const row = `<tr>
-            <td>${bid.carName}</td>
+            <td>${bid.car.carName}</td>
             <td>$${bid.bidAmount}</td>
-            <td>$${totalAmount}</td>
-            <td>${bid.username}</td>
-            <td>${bid.from}</td>
-            <td>${bid.to}</td>
+            <td>$${totalAmount.toFixed(2)}</td>
+            <td>${bid.user.username}</td>
+            <td>${bid.fromTimestamp}</td>
+            <td>${bid.toTimestamp}</td>
+            <td>${rentalTypeLabel}</td>
             <td class="action-buttons">
                 <button class="accept-btn" data-id="${bid.bidId}">Accept</button>
                 <button class="reject-btn" data-id="${bid.bidId}">Reject</button>
@@ -169,10 +234,9 @@ function renderPendingBids() {
         });
     });
     togglePaginationButtons("pending-pagination", currentPendingPage, pendingBids.length);
-
 }
 
-function renderBookings() {
+async function renderBookings() {
     const tableBody = document.querySelector("#bookings-table tbody");
     tableBody.innerHTML = "";
     const start = (currentBookingsPage - 1) * itemsPerPage;
@@ -187,24 +251,25 @@ function renderBookings() {
     }
 
     paginatedBookings.forEach(booking => {
-        const totalAmount = calculateTotalAmount(booking.bidPrice, booking.from, booking.to);
+        const totalAmount = calculateTotalAmount(booking.bid, booking.fromTimestamp, booking.toTimestamp);
+        const rentalTypeLabel = booking.rentalType === "local" ? "Local" : "Outstation";
         const row = `<tr>
-            <td>${booking.carName}</td>
-            <td>$${booking.bidPrice}</td>
-            <td>$${totalAmount}</td>
-            <td>${booking.username}</td>
-            <td>${booking.from}</td>
-            <td>${booking.to}</td>
+            <td>${booking.bid.car.carName}</td>
+            <td>$${booking.baseFare}</td>
+            <td>$${totalAmount.toFixed(2)}</td>
+            <td>${booking.bid.user.username}</td>
+            <td>${booking.fromTimestamp}</td>
+            <td>${booking.toTimestamp}</td>
             <td>${new Date(booking.createdAt).toLocaleDateString()}</td>
+            <td>${rentalTypeLabel}</td>
         </tr>`;
         tableBody.innerHTML += row;
     });
-    togglePaginationButtons("bookings-pagination", currentAllBidsPage, allBids.length);
+    togglePaginationButtons("bookings-pagination", currentBookingsPage, bookings.length);
     document.getElementById("bookings-page-info").textContent = `Page ${currentBookingsPage} of ${Math.ceil(bookings.length / itemsPerPage)}`;
-
 }
 
-function renderAllBids() {
+async function renderAllBids() {
     const tableBody = document.querySelector("#all-bids-table tbody");
     tableBody.innerHTML = "";
     const start = (currentAllBidsPage - 1) * itemsPerPage;
@@ -219,15 +284,16 @@ function renderAllBids() {
     }
 
     paginatedBids.forEach(bid => {
-        const totalAmount = calculateTotalAmount(bid.bidAmount, bid.from, bid.to);
+        const totalAmount = calculateTotalAmount(bid, bid.fromTimestamp, bid.toTimestamp);
+        const rentalTypeLabel = bid.rentalType === "local" ? "Local" : "Outstation";
         const row = `<tr>
-            <td>${bid.carName}</td>
+            <td>${bid.car.carName}</td>
             <td>$${bid.bidAmount}</td>
-                                <td>$${totalAmount}</td>
-
-            <td>${bid.username}</td>
-            <td>${bid.from}</td>
-            <td>${bid.to}</td>
+            <td>$${totalAmount.toFixed(2)}</td>
+            <td>${bid.user.username}</td>
+            <td>${bid.fromTimestamp}</td>
+            <td>${bid.toTimestamp}</td>
+            <td>${rentalTypeLabel}</td>
             <td>${bid.status}</td>
         </tr>`;
         tableBody.innerHTML += row;
@@ -267,15 +333,12 @@ function highlightActiveLink() {
     });
 }
 
-
 document.getElementById("prev-pending").addEventListener("click", () => { if (currentPendingPage > 1) currentPendingPage--; renderPendingBids(); });
 document.getElementById("next-pending").addEventListener("click", () => { if (currentPendingPage < Math.ceil(pendingBids.length / itemsPerPage)) currentPendingPage++; renderPendingBids(); });
 document.getElementById("prev-bookings").addEventListener("click", () => { if (currentBookingsPage > 1) currentBookingsPage--; renderBookings(); });
 document.getElementById("next-bookings").addEventListener("click", () => { if (currentBookingsPage < Math.ceil(bookings.length / itemsPerPage)) currentBookingsPage++; renderBookings(); });
 document.getElementById("prev-all-bids").addEventListener("click", () => { if (currentAllBidsPage > 1) currentAllBidsPage--; renderAllBids(); });
 document.getElementById("next-all-bids").addEventListener("click", () => { if (currentAllBidsPage < Math.ceil(allBids.length / itemsPerPage)) currentAllBidsPage++; renderAllBids(); });
-
-
 document.getElementById("status-sort").addEventListener("change", async (event) => {
     allBids = await getAllItemsByIndex("bids", "ownerId", userId);
     const status = event.target.value.toLowerCase();
@@ -287,7 +350,29 @@ document.getElementById("status-sort").addEventListener("change", async (event) 
     currentAllBidsPage = 1;
     renderAllBids();
 });
+document.getElementById("rental-type-sort-bookings").addEventListener("change", async (event) => {
+    const rentalType = event.target.value.toLowerCase();
+    if (rentalType === "all") {
+        bookings = await getAllItemsByIndex("bookings", "ownerId", userId);
+    } else {
+        bookings = await getAllItemsByIndex("bookings", "ownerId", userId);
+        bookings = bookings.filter(booking => booking.rentalType.toLowerCase() === rentalType);
+    }
+    currentBookingsPage = 1;
+    renderBookings();
+});
 
+document.getElementById("rental-type-sort-pending").addEventListener("change", async (event) => {
+    const rentalType = event.target.value.toLowerCase();
+    if (rentalType === "all") {
+        pendingBids = await getPendingBids();
+    } else {
+        pendingBids = await getPendingBids();
+        pendingBids = pendingBids.filter(bid => bid.rentalType.toLowerCase() === rentalType);
+    }
+    currentPendingPage = 1;
+    renderPendingBids();
+});
 
 document.getElementById('logout-link').addEventListener('click', (event) => {
     event.preventDefault();

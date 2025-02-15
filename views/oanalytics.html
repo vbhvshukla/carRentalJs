@@ -28,7 +28,7 @@
                     <li><a href="./odashboard.html">🏠 Dashboard</a></li>
                     <li><a href="./view-cars.html">🚗 My Cars</a></li>
                     <li><a href="./oanalytics.html">📊 Analytics</a></li>
-                    <li><a href="./view-omessages.html">📨 All Message</a></li>
+                    <li><a href="./view-omessages.html">📨 All Messages</a></li>
                     <li><a href="./add-car.html">➕ Add New Car</a></li>
                 </ul>
             </div>
@@ -36,7 +36,7 @@
             <div class="content">
                 <h2>Analytics</h2>
                 <div class="analytics-section">
-                    <div>
+                    <div class="filter-container">
                         <label for="time-range">Filter by:</label>
                         <select id="time-range">
                             <option value="7">Last Week</option>
@@ -60,43 +60,81 @@
                             <p id="totalBookingsCount">0</p>
                         </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="topBookedCarsChart"></canvas>
+
+                    <div class="category-section">
+                        <h3>Rental Types</h3>
+                        <div class="chart-row">
+                            <div class="chart-container">
+                                <canvas id="popularRentalTypeChart" data-chart="popularRentalTypeChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="revenueByRentalTypeChart" data-chart="revenueByRentalTypeChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="avgRentalDurationChart" data-chart="avgRentalDurationChart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="bookingsOverTimeChart"></canvas>
+
+                    <div class="category-section">
+                        <h3>Revenue</h3>
+                        <div class="chart-row">
+                            <div class="chart-container">
+                                <canvas id="revenueByCityChart" data-chart="revenueByCityChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="bookingRevenueChart" data-chart="bookingRevenueChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="totalRevenueOverTimeChart" data-chart="totalRevenueOverTimeChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="avgRevenuePerCarChart" data-chart="avgRevenuePerCarChart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="bookingRevenueChart"></canvas>
+
+                    <div class="category-section">
+                        <h3>Bookings and Bids</h3>
+                        <div class="chart-row">
+                            <div class="chart-container">
+                                <canvas id="topBookedCarsChart" data-chart="topBookedCarsChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="bookingsOverTimeChart" data-chart="bookingsOverTimeChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="bidAmountOverTimeChart" data-chart="bidAmountOverTimeChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="bidAcceptanceRateChart" data-chart="bidAcceptanceRateChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="bidsVsBookingsChart" data-chart="bidsVsBookingsChart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="bidAmountOverTimeChart"></canvas>
+
+                    <div class="category-section">
+                        <h3>Cars</h3>
+                        <div class="chart-row">
+                            <div class="chart-container">
+                                <canvas id="carsPerCityChart" data-chart="carsPerCityChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="popularCarCategoriesChart" data-chart="popularCarCategoriesChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="avgBidAmountChart" data-chart="avgBidAmountChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="mostActiveRentersChart" data-chart="mostActiveRentersChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="carUtilizationRateChart" data-chart="carUtilizationRateChart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="bidAcceptanceRateChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="carsPerCityChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="bidsVsBookingsChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="popularCarCategoriesChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="avgBidAmountChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="mostActiveRentersChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="totalRevenueOverTimeChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="avgRevenuePerCarChart"></canvas>
-                    </div>
-                   
                 </div>
             </div>
         </div>
@@ -106,8 +144,7 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module" src="../js/app/oanalytics.js">
-           </script>
+    <script type="module" src="../js/app/oanalytics.js"></script>
 </body>
 
 </html>

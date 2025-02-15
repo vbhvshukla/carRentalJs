@@ -1,6 +1,7 @@
 import { getAllItemsByIndex, getItemByKey, updateItem } from "../utils/dbUtils.js";
 import { getCookie } from "../utils/cookie.js";
 import { checkAuth, logout } from "../utils/auth.js";
+import { showToast } from "../utils/toastUtils.js";
 
 const userId = getCookie("userId");
 if (!userId) window.location.href = "./login.html";
@@ -31,15 +32,13 @@ function highlightActiveLink() {
 
 function renderBiddings(biddings) {
     const tableBody = document.querySelector("#bidding-table tbody");
-    const noBiddingsRow = document.getElementById("no-biddings-row");
-
     tableBody.innerHTML = "";
     if (biddings.length === 0) {
-        noBiddingsRow.classList.remove("hidden");
+        // document.getElementById("no-biddings-row").classList.remove("hidden");
     } else {
-        noBiddingsRow.classList.add("hidden");
+        // document.getElementById("no-biddings-row").classList.add("hidden");
         biddings.forEach(bid => {
-            const chatId = `${userId}_${bid.ownerId}_${bid.carId}`;
+            const chatId = `${userId}_${bid.car.owner.userId}_${bid.car.carId}`;
             const statusClass = bid.status.toLowerCase();
             const statusLabel = {
                 "approved": "✔ Approved",
@@ -48,20 +47,23 @@ function renderBiddings(biddings) {
                 "cancelled": "❌ Cancelled"
             }[bid.status.toLowerCase()] || bid.status;
 
-            const startDate = new Date(bid.from);
-            const endDate = new Date(bid.to);
+            const rentalTypeLabel = bid.rentalType === "local" ? "Local Rental" : "Outstation Rental";
+
+            const startDate = new Date(bid.fromTimestamp);
+            const endDate = new Date(bid.toTimestamp);
             const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
             const totalAmount = (days * bid.bidAmount).toFixed(2);
 
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${bid.carName}</td>
-                <td>${bid.ownerName}</td>
-                <td>$${bid.bidAmount} / day</td>
-                <td>${bid.from}</td>
-                <td>${bid.to}</td>
+                <td>${bid.car.carName}</td>
+                <td>${bid.car.owner.username}</td>
+                <td>₹${bid.bidAmount} / day</td>
+                <td>${bid.fromTimestamp}</td>
+                <td>${bid.toTimestamp}</td>
                 <td>${new Date(bid.createdAt).toLocaleDateString()}</td>
-                <td>$${totalAmount}</td>
+                <td>₹${totalAmount}</td>
+                <td>${rentalTypeLabel}</td>
                 <td class="status-${statusClass}">${statusLabel}</td>
                 <td>
                     <button class="chat-button" onclick="redirectToChat('${chatId}')">Chat</button>
@@ -73,20 +75,19 @@ function renderBiddings(biddings) {
     }
 }
 
-function showToast(message, type = "success") {
-    const toast = document.createElement("div");
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    document.getElementById("toast-container").appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
 function filterByStatus() {
     const selectedStatus = document.getElementById("status-sort").value;
     const filteredBids = selectedStatus
         ? biddings.filter(bid => bid.status.toLowerCase() === selectedStatus)
         : [...biddings];
+    renderBiddings(filteredBids);
+}
 
+function filterByRentalType() {
+    const selectedRentalType = document.getElementById("rental-type-sort").value;
+    const filteredBids = selectedRentalType
+        ? biddings.filter(bid => bid.rentalType === selectedRentalType)
+        : [...biddings];
     renderBiddings(filteredBids);
 }
 
@@ -125,6 +126,8 @@ async function updateNavLinks() {
         logoutLink.style.display = 'block';
         const userId = getCookie("userId");
         const user = await getItemByKey("users", userId);
+        const role = user.role;
+        const isApproved = user.isApproved;
         if (role === "owner" && isApproved) {
             ownerDashboard.style.display = 'block';
         } else {
@@ -137,15 +140,16 @@ async function updateNavLinks() {
     }
 }
 
-loadBiddingHistory();
-updateNavLinks();
-highlightActiveLink();
-
-document.getElementById('logout-link').addEventListener('click', (event) => {
-    event.preventDefault();
-    logout();
+document.addEventListener("DOMContentLoaded", () => {
+    loadBiddingHistory();
+    updateNavLinks();
+    highlightActiveLink();
+    window.redirectToChat = redirectToChat;
+    window.cancelBid = cancelBid;
+    window.filterByStatus = filterByStatus;
+    window.filterByRentalType = filterByRentalType;
+    document.getElementById('logout-link').addEventListener('click', (event) => {
+        event.preventDefault();
+        logout();
+    });
 });
-
-window.redirectToChat = redirectToChat;
-window.cancelBid = cancelBid;
-window.filterByStatus = filterByStatus;

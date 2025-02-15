@@ -259,6 +259,7 @@ tbody tr:hover {
 }
 
 .chat-button,
+.rate-button,
 .cancel-button {
   margin: 2px;
   padding: 6px 10px;
@@ -271,7 +272,8 @@ tbody tr:hover {
   white-space: nowrap;
 }
 
-.chat-button {
+.chat-button,
+.rate-button {
   background: linear-gradient(135deg, #1e3c72, #2a5298);
   color: white;
 }

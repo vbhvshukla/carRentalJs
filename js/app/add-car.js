@@ -3,29 +3,16 @@ import { getCookie } from "../utils/cookie.js";
 import { checkAuth, logout } from "../utils/auth.js";
 import { generateRandomId } from "../utils/generateId.js";
 import { readFileAsDataURL } from "../utils/readFile.js";
+import { validateForm, validateField } from "../utils/validation.js";
+import { showToast } from "../utils/toastUtils.js";
+import { cities } from "../utils/cities.js";
 
 const userId = getCookie("userId");
 const user = await getItemByKey("users", userId);
 if (!user || user.role !== "owner" || !user.isApproved) {
-    alert("Access Denied: You are not authorized to view this page.");
+    showToast("Access Denied: You are not authorized to view this page.", "error");
     window.location.href = user.role === "customer" ? "./udashboard.html" : "./login.html";
 }
-
-
-const cities = [
-    "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Surat", "Pune", "Jaipur",
-    "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam", "Pimpri-Chinchwad", "Patna",
-    "Vadodara", "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Rajkot", "Kalyan-Dombivli",
-    "Vasai-Virar", "Varanasi", "Srinagar", "Aurangabad", "Dhanbad", "Amritsar", "Navi Mumbai", "Allahabad",
-    "Ranchi", "Howrah", "Coimbatore", "Jabalpur", "Gwalior", "Vijayawada", "Jodhpur", "Madurai", "Raipur",
-    "Kota", "Guwahati", "Chandigarh", "Solapur", "Hubli-Dharwad", "Bareilly", "Mysore", "Moradabad", "Gurgaon",
-    "Aligarh", "Jalandhar", "Tiruchirappalli", "Bhubaneswar", "Salem", "Mira-Bhayandar", "Thiruvananthapuram",
-    "Bhiwandi", "Saharanpur", "Guntur", "Amravati", "Bikaner", "Noida", "Jamshedpur", "Bhilai", "Cuttack",
-    "Firozabad", "Kochi", "Bhavnagar", "Dehradun", "Durgapur", "Asansol", "Nanded", "Kolhapur", "Ajmer",
-    "Gulbarga", "Jamnagar", "Ujjain", "Loni", "Siliguri", "Jhansi", "Ulhasnagar", "Nellore", "Jammu", "Sangli",
-    "Belgaum", "Mangalore", "Ambattur", "Tirunelveli", "Malegaon", "Gaya", "Jalgaon", "Udaipur", "Maheshtala",
-    "Tiruppur", "Davanagere", "Kozhikode", "Akola", "Kurnool", "Bokaro", "South Dumdum"
-];
 
 const categorySelect = document.getElementById('category');
 const cityList = document.getElementById('city-list');
@@ -35,7 +22,7 @@ const addFeatureBtn = document.getElementById('add-feature-btn');
 
 getAllItems("categories").then(categories => {
     if (categories.length === 0) {
-        alert("No categories found. Please add categories first.");
+        showToast("No categories found. Please add categories first.", "error");
         return;
     }
     categories.forEach(category => {
@@ -57,7 +44,7 @@ addFeatureBtn.addEventListener("click", () => {
     const existingFeatures = Array.from(featuresList.children).map(li => li.firstChild.textContent.trim());
 
     if (!feature || existingFeatures.includes(feature)) {
-        alert("Feature is empty or already added!");
+        showToast("Feature is empty or already added!", "error");
         return;
     }
 
@@ -75,9 +62,10 @@ addFeatureBtn.addEventListener("click", () => {
         featuresList.appendChild(li);
         featureInput.value = "";
     } else {
-        alert("You can add a maximum of 3 features.");
+        showToast("You can add a maximum of 3 features.", "error");
     }
 });
+
 async function readFiles(files) {
     const filePromises = Array.from(files).map(file => readFileAsDataURL(file));
     return Promise.all(filePromises);
@@ -146,67 +134,138 @@ function updateImageList() {
     });
 }
 
+const formRules = {
+    carName: { required: true, carName: true },
+    categoryId: { required: true },
+    city: { required: true, citySelect: true },
+    description: { required: true, maxLength: 500 },
+    carType: { required: true, carType: true },
+    localPrice: { number: true },
+    maxKmPerHour: { number: true },
+    extraHourRate: { number: true },
+    extraKmRate: { number: true },
+    outstationPrice: { number: true },
+    pricePerKm: { number: true },
+    minimumKmChargeable: { number: true },
+    maxKmLimitPerDay: { number: true },
+    extraDayRate: { number: true },
+    extraHourlyRate: { number: true },
+    extraKmRateOutstation: { number: true }
+};
+
+
+
 document.getElementById('add-car-form').addEventListener('submit', async function (event) {
     event.preventDefault();
 
-    const carName = document.getElementById('car-name').value.trim();
-    const categoryId = document.getElementById('category').value.trim();
-    const category = await getAllItems("categories").then(categories => categories.find(cat => cat.categoryId === categoryId));
-    const city = document.getElementById('city').value.trim();
-    const basePrice = parseFloat(document.getElementById('base-price').value.trim());
-    const description = document.getElementById('description').value.trim();
-    const carType = document.getElementById('car-type').value.trim().toLowerCase();
-    const features = Array.from(featuresList.children).map(li => li.querySelector('span').textContent.trim());
+    const formElement = document.getElementById('add-car-form');
+    const formData = new FormData(formElement);
+
+    const formObject = {
+        carName: formData.get('car-name').trim(),
+        categoryId: formData.get('category').trim(),
+        city: formData.get('city').trim(),
+        description: formData.get('description').trim(),
+        carType: formData.get('car-type').trim().toLowerCase(),
+        features: Array.from(featuresList.children).map(li => li.querySelector('span').textContent.trim()),
+        isAvailableForLocal: formData.get('available-local') === 'on',
+        isAvailableForOutstation: formData.get('available-outstation') === 'on',
+        localPrice: parseFloat(formData.get('local-price')) || 0,
+        maxKmPerHour: parseFloat(formData.get('max-km-per-hour')) || 0,
+        extraHourRate: parseFloat(formData.get('extra-hour-rate')) || 0,
+        extraKmRate: parseFloat(formData.get('extra-km-rate')) || 0,
+        outstationPrice: parseFloat(formData.get('outstation-price')) || 0,
+        pricePerKm: parseFloat(formData.get('price-per-km')) || 0,
+        minimumKmChargeable: parseFloat(formData.get('minimum-km-chargeable')) || 0,
+        maxKmLimitPerDay: parseFloat(formData.get('minimum-km-chargeable')) + 100 || 0,
+        extraDayRate: parseFloat(formData.get('extra-day-rate')) || 0,
+        extraHourlyRate: parseFloat(formData.get('extra-hourly-rate')) || 0,
+        extraKmRateOutstation: parseFloat(formData.get('extra-km-rate-outstation')) || 0
+    };
+
+    const errors = validateForm(formObject, formRules);
+
+    if (Object.keys(errors).length > 0) {
+        Object.keys(errors).forEach(field => {
+            const errorElement = document.getElementById(`${field}-error`);
+            errorElement.textContent = errors[field];
+            errorElement.style.display = "block";
+        });
+        showToast("Please fill in all required fields correctly.", "error");
+        return;
+    }
 
     if (selectedImages.length === 0) {
-        alert("Please upload at least one image.");
+        showToast("Please upload at least one image.", "error");
         return;
     }
 
     if (selectedImages.length > 5) {
-        alert("You can upload a maximum of 5 images.");
+        showToast("You can upload a maximum of 5 images.", "error");
         return;
     }
 
+    if (formObject.features.length > 3) {
+        showToast("You can add a maximum of 3 features.", "error");
+        return;
+    }
+
+    const category = await getAllItems("categories").then(categories => categories.find(cat => cat.categoryId === formObject.categoryId));
     if (!category) {
-        alert("Invalid category selected.");
-        return;
-    }
-
-    if (!carName || !categoryId || !city || isNaN(basePrice) || !description || !carType) {
-        alert("Please fill in all required fields.");
-        return;
-    }
-
-    if (features.length > 3) {
-        alert("You can add a maximum of 3 features.");
+        showToast("Invalid category selected.", "error");
         return;
     }
 
     const car = {
         carId: generateRandomId(),
-        ownerId: getCookie("userId"),
-        ownerName: getCookie("username"),
-        carName,
-        categoryId,
-        categoryName: category.categoryName,
-        city,
-        basePrice,
-        description,
+        owner: {
+            userId: user.userId,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            isApproved: user.isApproved,
+            avgRating: user.avgRating,
+            ratingCount: user.ratingCount,
+            paymentPreference: user.paymentPreference
+        },
+        carName: formObject.carName,
+        category: {
+            categoryId: formObject.categoryId,
+            categoryName: category.categoryName
+        },
+        city: formObject.city,
+        description: formObject.description,
         images: selectedImages.map(img => img.data),
-        availability: "available",
+        isAvailableForLocal: formObject.isAvailableForLocal,
+        isAvailableForOutstation: formObject.isAvailableForOutstation,
         avgRating: 0,
-        reviewCount: 0,
-        createdAt: new Date(),
-        featured: features,
-        carType
+        ratingCount: 0,
+        createdAt: new Date().toISOString(),
+        featured: formObject.features,
+        carType: formObject.carType,
+        rentalOptions: {
+            local: {
+                pricePerHour: formObject.localPrice,
+                maxKmPerHour: formObject.maxKmPerHour,
+                extraHourRate: formObject.extraHourRate,
+                extraKmRate: formObject.extraKmRate
+            },
+            outstation: {
+                pricePerDay: formObject.outstationPrice,
+                pricePerKm: formObject.pricePerKm,
+                minimumKmChargeable: formObject.minimumKmChargeable,
+                maxKmLimitPerDay: formObject.maxKmLimitPerDay,
+                extraDayRate: formObject.extraDayRate,
+                extraHourlyRate: formObject.extraHourlyRate,
+                extraKmRate: formObject.extraKmRateOutstation
+            }
+        }
     };
 
     await addItem("cars", car);
-    alert("Car added successfully!");
+    showToast("Car added successfully!", "success");
     window.location.href = "./view-cars.html";
 });
-
 
 function highlightActiveLink() {
     const links = document.querySelectorAll('.sidebar ul li a');
@@ -220,15 +279,11 @@ function highlightActiveLink() {
             link.classList.remove('active');
         }
     });
-
 }
-
 
 document.getElementById('logout-link').addEventListener('click', (event) => {
     event.preventDefault();
     logout();
 });
-
-
 
 highlightActiveLink();

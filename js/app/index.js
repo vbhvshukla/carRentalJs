@@ -1,33 +1,18 @@
-import { getAllItems, getItemByKey, updateItem } from "../utils/dbUtils.js";
+import { getAllItems, getItemByKey } from "../utils/dbUtils.js";
 import { checkAuth, logout } from "../utils/auth.js";
 import { getCookie } from "../utils/cookie.js";
+import { cities } from "../utils/cities.js";
 
 const userId = getCookie("userId");
 
 if (userId) {
     const user = getItemByKey("users", userId);
     if (user.role === "admin") {
-        console.log("Something")
         window.location.href = "./admin/dashboard.html";
     }
 }
 
 let features = [];
-
-const cities = [
-    "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Surat", "Pune", "Jaipur",
-    "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam", "Pimpri-Chinchwad", "Patna",
-    "Vadodara", "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Rajkot", "Kalyan-Dombivli",
-    "Vasai-Virar", "Varanasi", "Srinagar", "Aurangabad", "Dhanbad", "Amritsar", "Navi Mumbai", "Allahabad",
-    "Ranchi", "Howrah", "Coimbatore", "Jabalpur", "Gwalior", "Vijayawada", "Jodhpur", "Madurai", "Raipur",
-    "Kota", "Guwahati", "Chandigarh", "Solapur", "Hubli-Dharwad", "Bareilly", "Mysore", "Moradabad", "Gurgaon",
-    "Aligarh", "Jalandhar", "Tiruchirappalli", "Bhubaneswar", "Salem", "Mira-Bhayandar", "Thiruvananthapuram",
-    "Bhiwandi", "Saharanpur", "Guntur", "Amravati", "Bikaner", "Noida", "Jamshedpur", "Bhilai", "Cuttack",
-    "Firozabad", "Kochi", "Bhavnagar", "Dehradun", "Durgapur", "Asansol", "Nanded", "Kolhapur", "Ajmer",
-    "Gulbarga", "Jamnagar", "Ujjain", "Loni", "Siliguri", "Jhansi", "Ulhasnagar", "Nellore", "Jammu", "Sangli",
-    "Belgaum", "Mangalore", "Ambattur", "Tirunelveli", "Malegaon", "Gaya", "Jalgaon", "Udaipur", "Maheshtala",
-    "Tiruppur", "Davanagere", "Kozhikode", "Akola", "Kurnool", "Bokaro", "South Dumdum"
-];
 
 const cityList = document.getElementById('city-list');
 
@@ -113,10 +98,11 @@ function createCarCard(car) {
                 <svg class="user-icon" viewBox="0 0 24 24" width="16" height="16">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
-                <span class="user-name">${car.ownerName}</span>
+                <span class="user-name">${car.owner.username}</span>
             </div>
             <div class="car-price-city">
-                <span class="price">$${car.basePrice}/day</span>
+                <span class="price">₹${car.rentalOptions.local.pricePerHour}/hour (Local)</span>
+                <span class="price">₹${car.rentalOptions.outstation.pricePerDay}/day (Outstation)</span>
                 <span class="city">${car.city}</span>
             </div>
             <button class="book-now-btn">Book Now</button>
@@ -145,37 +131,24 @@ function renderFilteredCars(cars) {
     });
 }
 
-async function updateCarAvailability() {
+async function getAvailableCars() {
     const today = new Date();
-    const bookings = await getAllItems("bookings");
-    const cars = await getAllItems("cars");
-    const updatedCars = cars.map(car => {
-        const carBookings = bookings.filter(b => b.carId === car.carId);
-        const isBooked = carBookings.some(booking => {
-            const fromDate = new Date(booking.from);
-            const toDate = new Date(booking.to);
+    const carAvailability = await getAllItems("carAvailability");
+    const allCars = await getAllItems("cars");
+    const availableCars = allCars.filter(car => {
+        const carAvailabilityEntries = carAvailability.filter(entry => entry.carId === car.carId);
+        const isBooked = carAvailabilityEntries.some(entry => {
+            const fromDate = new Date(entry.fromTimeStamp);
+            const toDate = new Date(entry.toTimeStamp);
             return today >= fromDate && today <= toDate;
         });
 
-        if (isBooked) {
-            car.availability = "unavailable";
-        } else {
-            car.availability = "available";
-        }
-
-        return car;
+        return !isBooked && !car.isDeleted;
     });
 
-    for (const car of updatedCars) {
-        await updateItem("cars", car);
-    }
-}
-
-async function getAvailableCars() {
-    const allCars = await getAllItems("cars");
-    features = [...new Set(allCars.flatMap((car) => car.featured))];
+    features = [...new Set(availableCars.flatMap((car) => car.featured))];
     populateFeaturesDatalist(features);
-    return allCars.filter(car => car.availability === "Available" || "available" && !car.isDeleted);
+    return availableCars;
 }
 
 function populateFeaturesDatalist(features) {
@@ -219,7 +192,6 @@ async function updateNavLinks() {
 }
 
 async function renderCars() {
-    await updateCarAvailability();
     const cars = await getAvailableCars();
     const carsContainer = document.getElementById("cars-container");
     carsContainer.innerHTML = "";
@@ -230,18 +202,27 @@ async function renderCars() {
 }
 
 async function getFilteredCars(filters) {
+    const today = new Date();
+    const carAvailability = await getAllItems("carAvailability");
     const allCars = await getAllItems('cars');
     const filteredCars = allCars.filter(car => {
+        const carAvailabilityEntries = carAvailability.filter(entry => entry.carId === car.carId);
+        const isBooked = carAvailabilityEntries.some(entry => {
+            const fromDate = new Date(entry.fromTimeStamp);
+            const toDate = new Date(entry.toTimeStamp);
+            return today >= fromDate && today <= toDate;
+        });
+
         const locationMatch = filters.location
             ? filters.location.toLowerCase().split(' ').some(word => car.city?.toLowerCase().includes(word))
             : true;
 
         const categoryMatch = filters.carCategory
-            ? car.categoryName?.toLowerCase() === filters.carCategory.toLowerCase()
+            ? car.category.categoryName?.toLowerCase() === filters.carCategory.toLowerCase()
             : true;
 
         const priceMatch = filters.priceRange
-            ? car.basePrice <= filters.priceRange
+            ? car.rentalOptions.local.pricePerHour <= filters.priceRange || car.rentalOptions.outstation.pricePerDay <= filters.priceRange
             : true;
 
         const carTypeMatch = filters.carType
@@ -249,11 +230,12 @@ async function getFilteredCars(filters) {
             : true;
 
         const availabilityMatch = filters.availability
-            ? car.availability?.toLowerCase() === filters.availability.toLowerCase()
+            ? (filters.availability.toLowerCase() === "local" && car.isAvailableForLocal) ||
+              (filters.availability.toLowerCase() === "outstation" && car.isAvailableForOutstation)
             : true;
 
-        const featuresMatch = filters.features
-            ? filters.features.some(f => car.featured?.map(ft => ft.toLowerCase()).includes(f.toLowerCase()))
+        const featuresMatch = filters.features.length > 0
+            ? filters.features.every(f => car.featured?.map(ft => ft.toLowerCase()).includes(f.toLowerCase()))
             : true;
 
         const ratingMatch = filters.rating
@@ -290,25 +272,19 @@ window.updatePriceRangeValue = function (value) {
 document.getElementById('search-form').addEventListener('submit', async function (event) {
     event.preventDefault();
 
-    const filters = {};
-    const location = document.getElementById('location').value.trim();
-    const carCategory = document.getElementById('car-category').value.trim();
-    const priceRange = document.getElementById('price-range').value.trim();
-    const carType = document.getElementById('car-type').value.trim();
-    const availability = document.getElementById('availability').value.trim();
-    const features = document.getElementById('features').value
-        .split(',')
-        .map(f => f.trim())
-        .filter(f => f !== '');
-    const rating = parseFloat(document.getElementById('rating').value.trim());
+    const formData = new FormData(event.target);
+    const filters = {
+        location: formData.get('location').trim(),
+        carCategory: formData.get('car-category').trim(),
+        priceRange: parseFloat(formData.get('price-range').trim()),
+        carType: formData.get('car-type').trim(),
+        availability: formData.get('availability').trim(),
+        features: formData.get('features') ? formData.get('features').split(',').map(f => f.trim()).filter(f => f !== '') : [],
+        rating: parseFloat(formData.get('rating').trim())
+    };
 
-    if (location) filters.location = location;
-    if (carCategory) filters.carCategory = carCategory;
-    if (priceRange) filters.priceRange = parseFloat(priceRange);
-    if (carType) filters.carType = carType;
-    if (availability) filters.availability = availability;
-    if (features.length > 0) filters.features = features;
-    if (!isNaN(rating)) filters.rating = rating;
+    if (isNaN(filters.priceRange)) delete filters.priceRange;
+    if (isNaN(filters.rating)) delete filters.rating;
 
     const cars = await getFilteredCars(filters);
     renderFilteredCars(cars);
@@ -319,10 +295,6 @@ document.getElementById('logout-link').addEventListener('click', (event) => {
     logout();
 });
 
-updateCarAvailability().then(() => {
-    renderCars();
-});
+renderCars();
 updateNavLinks();
 populateCategoryOptions();
-
-

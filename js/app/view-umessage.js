@@ -17,6 +17,93 @@ function getCarIdFromChatId(chatId) {
     return parts[parts.length - 1];
 }
 
+async function sendMessage(chatId, fromUserId, toUserId, message, file = null) {
+    const fromUser = await getItemByKey("users", fromUserId);
+    const toUser = await getItemByKey("users", toUserId);
+
+    const newMessage = {
+        messageId: generateRandomId('msg'),
+        chatId,
+        message,
+        hasAttachment: !!file,
+        attachment: file ? await readFileAsDataURL(file) : null,
+        createdAt: new Date().toISOString(),
+        fromUser: {
+            userId: fromUserId,
+            username: fromUser.username,
+            email: fromUser.email
+        },
+        toUser: {
+            userId: toUserId,
+            username: toUser.username,
+            email: toUser.email
+        }
+    };
+
+    await addItem("messages", newMessage);
+
+    const conversation = await getItemByKey("conversations", chatId) || {
+        chatId,
+        lastMessage: '',
+        lastTimestamp: '',
+        owner: {
+            userId: toUserId,
+            username: toUser.username,
+            email: toUser.email
+        },
+        user: {
+            userId: fromUserId,
+            username: fromUser.username,
+            email: fromUser.email
+        }
+    };
+
+    conversation.lastMessage = message;
+    conversation.lastTimestamp = newMessage.createdAt;
+
+    await updateItem("conversations", conversation);
+}
+
+async function renderChatMessages() {
+    const chatId = getChatIdFromURL();
+    const allMessages = await getAllItemsByIndex("messages", "chatId", chatId);
+    const chatMessagesContainer = document.getElementById("chat-messages");
+    chatMessagesContainer.innerHTML = "";
+    allMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    for (const msg of allMessages) {
+        const fromUser = await getItemByKey("users", msg.fromUser.userId);
+        const messageElement = document.createElement("div");
+        messageElement.className = `chat-message ${msg.fromUser.userId === userId ? 'message-you' : 'message-owner'}`;
+        messageElement.innerHTML = `
+            <div><strong>${msg.fromUser.userId === userId ? 'You' : fromUser.username}:</strong> ${msg.message}</div>
+            ${msg.hasAttachment ?
+                (msg.attachment.startsWith('data:image/') ?
+                    `<div><img src="${msg.attachment}" class="chat-attachment"></div>` :
+                    `<div><strong>Attachment:</strong> <a href="${msg.attachment}" download><svg>📎</svg></a></div>`)
+                : ''
+            }
+            <div class="timestamp">${new Date(msg.createdAt).toLocaleString()}</div>
+        `;
+        chatMessagesContainer.appendChild(messageElement);
+    }
+}
+
+document.getElementById("send-chat-message-btn").addEventListener("click", async () => {
+    const messageInput = document.getElementById("chat-message-input");
+    const fileInput = document.getElementById("chat-file-input");
+    const message = messageInput.value.trim();
+    const file = fileInput.files[0];
+    const chatId = getChatIdFromURL();
+    const carId = getCarIdFromChatId(chatId);
+    const car = await getItemByKey("cars", carId);
+    if (message || file) {
+        await sendMessage(chatId, userId, car.owner.userId, message, file);
+        messageInput.value = "";
+        fileInput.value = "";
+        renderChatMessages();
+    }
+});
+
 async function disableBookedDates(carId) {
     const bookings = await getAllItemsByIndex("bookings", "carId", carId);
     const startDateInput = document.getElementById("start-date");
@@ -24,8 +111,8 @@ async function disableBookedDates(carId) {
 
     const disabledDates = new Set();
     bookings.forEach(booking => {
-        let currentDate = new Date(booking.from);
-        const toDate = new Date(booking.to);
+        let currentDate = new Date(booking.fromTimestamp);
+        const toDate = new Date(booking.toTimestamp);
         while (currentDate <= toDate) {
             disabledDates.add(currentDate.toISOString().split("T")[0]);
             currentDate.setDate(currentDate.getDate() + 1);
@@ -88,7 +175,7 @@ async function renderCarDetails() {
     document.getElementById("bid-amount").addEventListener("input", handleDateChange);
 
     document.getElementById("current-price").textContent = car.basePrice;
-    document.getElementById("owner-name").textContent = car.ownerName;
+    document.getElementById("owner-name").textContent = car.owner.username;
 
     document.getElementById("bid-form").addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -97,7 +184,7 @@ async function renderCarDetails() {
         const bidAmount = parseFloat(document.getElementById("bid-amount").value);
         const existingBookings = await getAllItemsByIndex("bookings", "carId", carId);
         const isOverlapping = existingBookings.some(booking =>
-            isDateRangeOverlap(new Date(booking.from), new Date(booking.to), new Date(startDate), new Date(endDate))
+            isDateRangeOverlap(new Date(booking.fromTimestamp), new Date(booking.toTimestamp), new Date(startDate), new Date(endDate))
         );
 
         if (isOverlapping) {
@@ -108,10 +195,10 @@ async function renderCarDetails() {
             alert("Please fill all fields.");
             return;
         }
-
-        if (new Date(startDate) < new Date()) return alert("Start date cannot be before today's date.");
-
-
+        if (new Date(startDate) < new Date()) {
+            alert("Start date cannot be before today's date.");
+            return;
+        }
         if (new Date(startDate) >= new Date(endDate)) {
             alert("Start date must be before end date.");
             return;
@@ -126,23 +213,30 @@ async function renderCarDetails() {
             bidId: generateRandomId('bid'),
             userId,
             username: getCookie("username"),
-            carId,
-            carName: car.carName,
-            ownerId: car.ownerId,
-            categoryId: car.categoryId,
-            ownerName: car.ownerName,
             bidAmount,
             from: startDate,
             to: endDate,
             status: "pending",
-            createdAt: new Date().toISOString().split('T')[0]
+            createdAt: new Date().toISOString().split('T')[0],
+            car: {
+                carId: car.carId,
+                carName: car.carName,
+                carType: car.carType,
+                categoryId: car.categoryId,
+                categoryName: car.categoryName,
+                city: car.city,
+                basePrice: car.basePrice,
+                ownerId: car.ownerId,
+                ownerName: car.ownerName
+            }
         };
 
         await addItem("bids", bid);
-        const message = `New bid placed by ${getCookie("username")} for ${car.carName} from ${startDate} to ${endDate} with a bid amount of $${bidAmount}.`;
+        const message = `New bid placed by ${getCookie("username")} for ${car.carName} from ${startDate} to ${endDate} with a bid amount of ₹${bidAmount}.`;
         await sendMessage(chatId, userId, car.ownerId, message);
         alert("Bid placed successfully!");
     });
+
     async function handleDateChange() {
         const startDate = document.getElementById("start-date").value;
         const endDate = document.getElementById("end-date").value;
@@ -182,7 +276,7 @@ async function renderCarDetails() {
         }
         bids.forEach(bid => {
             const li = document.createElement("li");
-            li.textContent = `Existing Bids from ${bid.from} to ${bid.to} Current highest bid :  $${bid.bidAmount}`;
+            li.textContent = `Existing Bids from ${bid.from} to ${bid.to} Current highest bid: ₹${bid.bidAmount}`;
             otherBidsList.appendChild(li);
         });
     }
@@ -196,43 +290,11 @@ async function renderCarDetails() {
             await sendMessage(chatId, userId, car.ownerId, message, file);
             messageInput.value = "";
             fileInput.value = "";
-            renderChatMessages(car.ownerId);
+            renderChatMessages();
         }
     });
 
-    renderChatMessages(car.ownerId);
-}
-
-async function sendMessage(chatId, fromUserId, toUserId, message, file = null) {
-    const newMessage = {
-        messageId: generateRandomId(),
-        chatId,
-        fromUserId,
-        toUserId,
-        message,
-        createdAt: new Date().toISOString(),
-        hasAttachment: !!file,
-        attachment: file ? await readFileAsDataURL(file) : null
-    };
-    await addItem("messages", newMessage);
-    const conversation = await getItemByKey("conversations", chatId) || {
-        chatId,
-        participants: [fromUserId, toUserId],
-        lastMessage: '',
-        lastTimestamp: ''
-    };
-    conversation.lastMessage = message;
-    conversation.lastTimestamp = newMessage.createdAt;
-    await updateItem("conversations", conversation);
-}
-
-function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
+    renderChatMessages();
 }
 
 document.getElementById('bid-amount').addEventListener('input', function () {
@@ -242,33 +304,10 @@ document.getElementById('bid-amount').addEventListener('input', function () {
     }
 });
 
-async function renderChatMessages(ownerId) {
-    const allMessages = await getAllItemsByIndex("messages", "chatId", `${userId}_${ownerId}_${getCarIdFromChatId(getChatIdFromURL())}`);
-    const ownerName = await getItemByKey("users", ownerId);
-    const chatMessagesContainer = document.getElementById("chat-messages");
-    chatMessagesContainer.innerHTML = "";
-    allMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    allMessages.forEach(msg => {
-        const messageElement = document.createElement("div");
-        messageElement.className = `chat-message ${msg.fromUserId === userId ? 'message-you' : 'message-owner'}`;
-        messageElement.innerHTML = `
-            <div><strong>${msg.fromUserId === userId ? 'You' : ownerName.username}:</strong> ${msg.message}</div>
-${msg.hasAttachment ?
-                (msg.attachment.startsWith('data:image/') ?
-                    `<div><img src="${msg.attachment}" class="chat-attachment"></div>` :
-                    `<div><strong>Attachment:</strong> <a href="${msg.attachment}" download><svg>📎</svg></a></div>`)
-                : ''
-            }                    <div class="timestamp"> ${new Date(msg.createdAt).toLocaleString()}</div>
-        `;
-        chatMessagesContainer.appendChild(messageElement);
-    });
-}
-
 document.getElementById('logout-link').addEventListener('click', (event) => {
     event.preventDefault();
     logout();
 });
-
 
 document.getElementById('start-date').addEventListener('change', function () {
     const startDate = this.value;
@@ -290,7 +329,6 @@ btn.onclick = function () {
 span.onclick = function () {
     modal.style.display = "none";
 }
-
 
 async function updateNavLinks() {
     const isAuthenticated = await checkAuth();

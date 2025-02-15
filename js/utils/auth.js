@@ -3,10 +3,20 @@ import { getItemByKey } from "./dbUtils.js";
 
 function checkAuth() {
     const userId = getCookie("userId");
-    if (!userId || userId == null) {
-        return false;
-    }
-    return true;
+    return !!userId;
+}
+
+async function getUserRole() {
+    const userId = getCookie("userId");
+    if (!userId) return null;
+    const user = await getItemByKey("users", userId);
+    return user ? user.role : null;
+}
+
+async function getUser() {
+    const userId = getCookie("userId");
+    if (!userId) return null;
+    return await getItemByKey("users", userId);
 }
 
 function logout() {
@@ -19,17 +29,18 @@ function logout() {
 }
 
 async function checkAdmin() {
-    const userId = getCookie("userId");
-    if (!userId) return false;
-    const user = await getItemByKey("users", userId);
-    return user && user.role === "admin";
+    const role = await getUserRole();
+    return role === "admin";
 }
 
 async function checkOwnerApproved() {
-    const userId = getCookie("userId");
-    if (!userId) return false;
-    const user = await getItemByKey("users", userId);
+    const user = await getUser();
     return user && user.role === "owner" && user.isApproved;
 }
 
-export { checkAuth, logout, checkAdmin, checkOwnerApproved };
+async function checkCustomer() {
+    const role = await getUserRole();
+    return role === "customer";
+}
+
+export { checkAuth, getUserRole, getUser, logout, checkAdmin, checkOwnerApproved, checkCustomer };

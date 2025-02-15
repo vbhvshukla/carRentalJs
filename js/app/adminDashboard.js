@@ -16,9 +16,9 @@ let userSortDirection = 'asc';
 let carSortField = null;
 let carSortDirection = 'asc';
 
-if (!user || user.role !== "admin") {
-    window.location.href = "../views/login.html";
-}
+// if (!user || user.role !== "admin") {
+//     window.location.href = "../views/login.html";
+// }
 
 async function loadUsers() {
     const users = await getAllItems("users");

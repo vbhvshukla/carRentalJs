@@ -72,9 +72,13 @@ body {
 
 .analytics-section {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 20px;
     padding: 20px;
+}
+
+.filter-container {
+    margin-bottom: 20px;
 }
 
 .cards-container {
@@ -104,10 +108,26 @@ body {
     color: #3498db;
 }
 
+.category-section {
+    margin-bottom: 40px;
+}
+
+.category-section h3 {
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    color: #2c3e50;
+}
+
 .chart-container {
     flex: 1;
     min-width: 45%;
     height: 400px;
+}
+
+.chart-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
 }
 
 .analytics-section canvas {
@@ -192,7 +212,7 @@ body {
 }
 
 @media (max-width: 768px) {
-    .analytics-section {
-        grid-template-columns: 1fr;
+    .chart-row {
+        flex-direction: column;
     }
 }

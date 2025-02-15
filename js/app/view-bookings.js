@@ -1,4 +1,4 @@
-import { getAllItemsByIndex, getItemByKey, updateItem } from "../utils/dbUtils.js";
+import { getAllItems, getItemByKey, updateItem } from "../utils/dbUtils.js";
 import { checkAuth, logout } from "../utils/auth.js";
 import { getCookie } from "../utils/cookie.js";
 
@@ -28,8 +28,8 @@ async function updateNavLinks() {
 
 async function getBookings() {
     try {
-        const ownerId = getCookie("userId");
-        const ownerBookings = await getAllItemsByIndex("bookings", "ownerId", ownerId);
+        const bookings = await getAllItems("bookings");
+        const ownerBookings = bookings.filter(booking => booking.car.ownerId === userId);
         return ownerBookings;
     } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -42,7 +42,7 @@ function createBookingCard(booking) {
     card.className = "car-card";
     const bookingDetails = `
         <div class="car-details">
-            <h3 class="car-name">${booking.carName}</h3>
+            <h3 class="car-name">${booking.car.carName}</h3>
             <div class="car-features">
                 <span class="feature">Bid Price: $${booking.bidPrice}</span>
             </div>
@@ -94,18 +94,17 @@ async function cancelBooking(bookingId) {
         alert('Failed to cancel booking. Please try again.');
     }
 }
-renderBookings();
-updateNavLinks();
+
 document.addEventListener("DOMContentLoaded", () => {
-    if (checkAuth && userId && role == 'owner') {
-        
+    renderBookings();
+    updateNavLinks();
+
+    if (checkAuth && userId && user.role === 'owner') {
         document.getElementById('logout-link').addEventListener('click', (event) => {
             event.preventDefault();
             logout();
         });
-
-    }
-    else {
+    } else {
         window.location.href = "./index.html";
     }
 });

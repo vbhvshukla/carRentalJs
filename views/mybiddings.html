@@ -43,6 +43,13 @@
                             <th>End Date</th>
                             <th>Placed At</th>
                             <th>Total Amount</th>
+                            <th>Rental Type
+                                <select id="rental-type-sort" onchange="filterByRentalType()">
+                                    <option value="">All</option>
+                                    <option value="local">Local</option>
+                                    <option value="outstation">Outstation</option>
+                                </select>
+                            </th>
                             <th>
                                 Status
                                 <select id="status-sort" onchange="filterByStatus()">
@@ -58,7 +65,7 @@
                     </thead>
                     <tbody>
                         <tr id="no-biddings-row" class="hidden">
-                            <td colspan="9" class="no-biddings">No biddings exist.</td>
+                            <td colspan="10" class="no-biddings">No biddings exist.</td>
                         </tr>
                     </tbody>
                 </table>

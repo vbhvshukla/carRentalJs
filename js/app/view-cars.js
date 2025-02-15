@@ -2,6 +2,8 @@ import { getAllItemsByIndex, updateItem, getAllItems, getItemByKey } from "../ut
 import { checkAuth, logout } from "../utils/auth.js";
 import { getCookie } from "../utils/cookie.js";
 import { readFileAsDataURL } from "../utils/readFile.js";
+import { validateForm } from "../utils/validation.js";
+
 const userId = getCookie("userId");
 const user = await getItemByKey("users", userId);
 
@@ -18,12 +20,6 @@ async function updateNavLinks() {
     if (isAuthenticated) {
         userDashboard.style.display = 'block';
         logoutLink.style.display = 'block';
-
-        const userId = getCookie("userId");
-        const user = await getItemByKey("users", userId);
-        const role = user.role;
-        const isApproved = user.isApproved;
-
     } else {
         userDashboard.style.display = 'none';
         logoutLink.style.display = 'none';
@@ -45,7 +41,7 @@ async function renderOwnerCars() {
     });
 }
 
-async function populateCategoryOptions() {
+async function populateCategoryOptions(selectedCategory) {
     const categories = await getAllItems("categories");
     const categorySelect = document.getElementById('category');
     categorySelect.innerHTML = '<option value="">Select Category</option>';
@@ -53,6 +49,9 @@ async function populateCategoryOptions() {
         const option = document.createElement('option');
         option.value = category.categoryId;
         option.textContent = category.categoryName;
+        if (category.categoryName === selectedCategory) {
+            option.selected = true;
+        }
         categorySelect.appendChild(option);
     });
 }
@@ -113,7 +112,8 @@ function createCarCard(car) {
                 <span class="rating-count">(${car.avgRating.toFixed(1)}/5, ${car.ratingCount || 0} reviews)</span>
             </div>
             <div class="car-price-city">
-                <span class="price">$${car.basePrice}/day</span>
+                <span class="price">₹${car.rentalOptions.local.pricePerHour}/hour (Local)</span>
+                <span class="price">₹${car.rentalOptions.outstation.pricePerDay}/day (Outstation)</span>
                 <span class="city">${car.city}</span>
             </div>
             <div class="car-description">
@@ -121,7 +121,7 @@ function createCarCard(car) {
             </div>
             <div class="car-info">
                 <p>Type: ${car.carType}</p>
-                <p>Category: ${car.categoryName}</p>
+                <p>Category: ${car.category.categoryName}</p>
                 <p>Created At: ${new Date(car.createdAt).toLocaleDateString()}</p>
             </div>
             <button class="edit-car-btn">Edit Car</button>
@@ -185,10 +185,6 @@ function editCar(car) {
                     <select id="category" name="category" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="basePrice">Base Price:</label>
-                    <input type="number" id="basePrice" name="basePrice"  min="1" value="${car.basePrice}">
-                </div>
-                <div class="form-group">
                     <label for="description">Description:</label>
                     <textarea id="description" name="description">${car.description}</textarea>
                 </div>
@@ -199,21 +195,21 @@ function editCar(car) {
                         <option value="Unavailable" ${car.availability === 'Unavailable' ? 'selected' : ''}>Save As Draft</option>
                     </select>
                 </div>
-               <div class="form-group">
-            <label for="existing-images">Current Images:</label>
-            <div id="existing-images">
-                ${car.images.map((img, index) => `
-                    <div class="image-wrapper">
-                        <img src="${img}" class="edit-image-preview">
-                        <button type="button" onclick="removeExistingImage(${index})">❌</button>
+                <div class="form-group">
+                    <label for="existing-images">Current Images:</label>
+                    <div id="existing-images">
+                        ${car.images.map((img, index) => `
+                            <div class="image-wrapper">
+                                <img src="${img}" class="edit-image-preview">
+                                <button type="button" onclick="removeExistingImage(${index})">❌</button>
+                            </div>
+                        `).join("")}
                     </div>
-                `).join("")}
-            </div>
-        </div>
-         <div class="form-group">
-            <label for="new-images">Add New Images:</label>
-            <input type="file" id="new-images" name="new-images" accept="image/*" multiple>
-        </div>
+                </div>
+                <div class="form-group">
+                    <label for="new-images">Add New Images:</label>
+                    <input type="file" id="new-images" name="new-images" accept="image/*" multiple>
+                </div>
                 <div class="form-group">
                     <label for="city">City:</label>
                     <input type="text" id="city" name="city" list="city-list" value="${car.city}" required>
@@ -236,6 +232,50 @@ function editCar(car) {
                         <option value="Manual" ${car.carType === 'Manual' ? 'selected' : ''}>Manual</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="local-price">Local Rental Price Per Hour:</label>
+                    <input type="number" id="local-price" name="local-price" min="0" max="5000" value="${car.rentalOptions.local.pricePerHour}">
+                </div>
+                <div class="form-group">
+                    <label for="max-km-per-hour">Max Km Per Hour (Local):</label>
+                    <input type="number" id="max-km-per-hour" name="max-km-per-hour" min="0" max="5000" value="${car.rentalOptions.local.maxKmPerHour}">
+                </div>
+                <div class="form-group">
+                    <label for="extra-hour-rate">Extra Hour Rate (Local):</label>
+                    <input type="number" id="extra-hour-rate" name="extra-hour-rate" min="0" max="5000" value="${car.rentalOptions.local.extraHourRate}">
+                </div>
+                <div class="form-group">
+                    <label for="extra-km-rate">Extra Km Rate (Local):</label>
+                    <input type="number" id="extra-km-rate" name="extra-km-rate" min="0" max="5000" value="${car.rentalOptions.local.extraKmRate}">
+                </div>
+                <div class="form-group">
+                    <label for="outstation-price">Outstation Rental Price Per Day:</label>
+                    <input type="number" id="outstation-price" name="outstation-price" min="0" max="5000" value="${car.rentalOptions.outstation.pricePerDay}">
+                </div>
+                <div class="form-group">
+                    <label for="price-per-km">Price Per Km (Outstation):</label>
+                    <input type="number" id="price-per-km" name="price-per-km" min="0" max="5000" value="${car.rentalOptions.outstation.pricePerKm}">
+                </div>
+                <div class="form-group">
+                    <label for="minimum-km-chargeable">Minimum Km Chargeable (Outstation):</label>
+                    <input type="number" id="minimum-km-chargeable" name="minimum-km-chargeable" min="0" max="5000" value="${car.rentalOptions.outstation.minimumKmChargeable}">
+                </div>
+                <div class="form-group">
+                    <label for="max-km-limit-per-day">Max Km Limit Per Day (Outstation):</label>
+                    <input type="number" id="max-km-limit-per-day" name="max-km-limit-per-day" min="0" max="5000" value="${car.rentalOptions.outstation.maxKmLimitPerDay}">
+                </div>
+                <div class="form-group">
+                    <label for="extra-day-rate">Extra Day Rate (Outstation):</label>
+                    <input type="number" id="extra-day-rate" name="extra-day-rate" min="0" max="5000" value="${car.rentalOptions.outstation.extraDayRate}">
+                </div>
+                <div class="form-group">
+                    <label for="extra-hourly-rate">Extra Hourly Rate (Outstation):</label>
+                    <input type="number" id="extra-hourly-rate" name="extra-hourly-rate" min="0" max="5000" value="${car.rentalOptions.outstation.extraHourlyRate}">
+                </div>
+                <div class="form-group">
+                    <label for="extra-km-rate-outstation">Extra Km Rate (Outstation):</label>
+                    <input type="number" id="extra-km-rate-outstation" name="extra-km-rate-outstation" min="0" max="5000" value="${car.rentalOptions.outstation.extraKmRate}">
+                </div>
                 <button type="submit" class="button">Save Changes</button>
             </form>
         </div>
@@ -243,25 +283,90 @@ function editCar(car) {
 
     const carsContainer = document.getElementById("cars-container");
     carsContainer.innerHTML = carDetails;
-    populateCategoryOptions(car.categoryName);
+    populateCategoryOptions(car.category.categoryName);
 
     document.getElementById("edit-car-form").addEventListener("submit", async function (event) {
         event.preventDefault();
-        const categorySelect = document.getElementById("category");
-        const categoryId = categorySelect.value;
-        const categoryName = categorySelect.options[categorySelect.selectedIndex].textContent;
+
+        const formData = new FormData(event.target);
+        const formObject = {
+            carName: formData.get("carName").trim(),
+            categoryId: formData.get("category").trim(),
+            city: formData.get("city").trim(),
+            description: formData.get("description").trim(),
+            carType: formData.get("car-type").trim().toLowerCase(),
+            features: Array.from(document.querySelectorAll("#features-list li")).map(li => li.firstChild.textContent),
+            isAvailableForLocal: formData.get("available-local") === "on",
+            isAvailableForOutstation: formData.get("available-outstation") === "on",
+            localPrice: parseFloat(formData.get("local-price")) || 0,
+            maxKmPerHour: parseFloat(formData.get("max-km-per-hour")) || 0,
+            extraHourRate: parseFloat(formData.get("extra-hour-rate")) || 0,
+            extraKmRate: parseFloat(formData.get("extra-km-rate")) || 0,
+            outstationPrice: parseFloat(formData.get("outstation-price")) || 0,
+            pricePerKm: parseFloat(formData.get("price-per-km")) || 0,
+            minimumKmChargeable: parseFloat(formData.get("minimum-km-chargeable")) || 0,
+            maxKmLimitPerDay: parseFloat(formData.get("minimum-km-chargeable")) + 100 || 0,
+            extraDayRate: parseFloat(formData.get("extra-day-rate")) || 0,
+            extraHourlyRate: parseFloat(formData.get("extra-hourly-rate")) || 0,
+            extraKmRateOutstation: parseFloat(formData.get("extra-km-rate-outstation")) || 0
+        };
+
+        const errors = validateForm(formObject, {
+            carName: { required: true, carName: true },
+            categoryId: { required: true },
+            city: { required: true, citySelect: true },
+            description: { required: true, maxLength: 500 },
+            carType: { required: true, carType: true },
+            localPrice: { number: true },
+            maxKmPerHour: { number: true },
+            extraHourRate: { number: true },
+            extraKmRate: { number: true },
+            outstationPrice: { number: true },
+            pricePerKm: { number: true },
+            minimumKmChargeable: { number: true },
+            maxKmLimitPerDay: { number: true },
+            extraDayRate: { number: true },
+            extraHourlyRate: { number: true },
+            extraKmRateOutstation: { number: true }
+        });
+
+        if (Object.keys(errors).length > 0) {
+            Object.keys(errors).forEach(field => {
+                const errorElement = document.getElementById(`${field}-error`);
+                errorElement.textContent = errors[field];
+                errorElement.style.display = "block";
+            });
+            alert("Please fill in all required fields correctly.");
+            return;
+        }
 
         const updatedCar = {
             ...car,
-            carName: document.getElementById("carName").value,
-            basePrice: parseFloat(document.getElementById("basePrice").value),
-            availability: document.getElementById("availability").value.toLowerCase(),
-            carType: document.getElementById("car-type").value,
-            categoryId,
-            categoryName,
-            city: document.getElementById("city").value,
-            description: document.getElementById("description").value,
+            carName: formData.get("carName").trim(),
+            availability: formData.get("availability").trim().toLowerCase(),
+            carType: formData.get("car-type").trim(),
+            categoryId: formData.get("category").trim(),
+            categoryName: document.getElementById("category").selectedOptions[0].textContent,
+            city: formData.get("city").trim(),
+            description: formData.get("description").trim(),
             featured: Array.from(document.querySelectorAll("#features-list li")).map(li => li.firstChild.textContent),
+            rentalOptions: {
+                local: {
+                    pricePerHour: parseFloat(formData.get("local-price")) || 0,
+                    maxKmPerHour: parseFloat(formData.get("max-km-per-hour")) || 0,
+                    extraHourRate: parseFloat(formData.get("extra-hour-rate")) || 0,
+                    extraKmRate: parseFloat(formData.get("extra-km-rate")) || 0
+                },
+                outstation: {
+                    pricePerDay: parseFloat(formData.get("outstation-price")) || 0,
+                    pricePerKm: parseFloat(formData.get("price-per-km")) || 0,
+                    minimumKmChargeable: parseFloat(formData.get("minimum-km-chargeable")) || 0,
+                    maxKmLimitPerDay: parseFloat(formData.get("minimum-km-chargeable")) + 100 || 0,
+                    extraDayRate: parseFloat(formData.get("extra-day-rate")) || 0,
+                    extraHourlyRate: parseFloat(formData.get("extra-hourly-rate")) || 0,
+                    extraKmRate: parseFloat(formData.get("extra-km-rate-outstation")) || 0
+                }
+            }
         };
 
         const newImages = document.getElementById("new-images").files;
@@ -317,6 +422,7 @@ function highlightActiveLink() {
         }
     });
 }
+
 updateNavLinks();
 renderOwnerCars();
 highlightActiveLink();

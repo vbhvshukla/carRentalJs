@@ -41,28 +41,7 @@ async function injectDemoData() {
         });
     }
 
-    // await addItem("cars", {
-    //     carId,
-    //     carName: "Kia Sorento 2022",
-    //     carType: "automatic",
-    //     categoryId: "5731939043",
-    //     categoryName: "SUV",
-    //     city: "Noida",
-    //     createdAt: new Date().toISOString(),
-    //     description: "A family-friendly SUV with ample space and comfort.",
-    //     featured: ["Automatic", "7 Seats", "Third Row"],
-    //     images: [
-    //         'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD…EREBERAREQEREBERAREQEREBERAREQEREBERAREQEREH/2Q==',
-    //         'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD…BERAREQEREBERAREQEREBERAREQEREBERAREQEREBERB//9k=',
-    //         'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD…RAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQf//Z'
-    //     ],
-    //     ownerId,
-    //     ownerName: "Olivia",
-    //     basePrice: 75,
-    //     avgRating: 4.4,
-    //     ratingCount: 21,
-    //     availibility: "unavailable"
-    // });
+
 
     for (let i = 1; i <= 5; i++) {
         await addItem("bookings", {

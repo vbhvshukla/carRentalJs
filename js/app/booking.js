@@ -4,8 +4,6 @@ import { getCookie } from "../utils/cookie.js";
 import { checkAuth, logout } from "../utils/auth.js";
 import { showToast } from "../utils/toastUtils.js";
 
-
-
 const carId = getCarIdFromURL();
 const userId = getCookie("userId");
 if (!userId) window.location.href = `./login.html?carId=${carId}`;
@@ -29,109 +27,203 @@ async function renderCarDetails() {
     totalPriceDiv.style.display = "none";
     const carId = getCarIdFromURL();
     if (!carId) {
-        showToast("Car not found.","error");
+        showToast("Car not found.", "error");
         return;
     }
 
     const car = await getItemByKey("cars", carId);
+    
     if (!car) {
-        showToast("Car not found.","error");
+        showToast("Car not found.", "error");
         return;
     }
 
-    if (car.ownerId === userId) {
-        showToast("You cannot book your own car.","error");
+    if (car.owner.userId === userId) {
+        showToast("You cannot book your own car.", "error");
         window.location.href = "./index.html";
         return;
     }
 
     document.getElementById("car-name").textContent = car.carName;
-    document.getElementById("base-price").textContent = car.basePrice;
     document.getElementById("car-description").textContent = car.description;
-    document.getElementById("owner-name").textContent = car.ownerName;
+    document.getElementById("owner-name").textContent = car.owner.username;
     document.getElementById("car-city").textContent = car.city;
-    document.getElementById("category-name").textContent = car.categoryName;
+    document.getElementById("category-name").textContent = car.category.categoryName;
     document.getElementById("featured").textContent = car.featured.join(', ');
-    document.getElementById("current-price").textContent = car.basePrice;
 
     const carImages = document.getElementById("car-images");
     carImages.innerHTML = car.images.map(image => `<img src="${image}" alt="Car Image">`).join('');
 
+    document.getElementById("local-charges").textContent = `Local: ₹${car.rentalOptions.local.pricePerHour} per hour`;
+    document.getElementById("outstation-charges").textContent = `Outstation: ₹${car.rentalOptions.outstation.pricePerDay} per day`;
+
+
     await disableBookedDates(carId);
 
-    document.getElementById("start-date").addEventListener("change", handleDateChange);
-    document.getElementById("end-date").addEventListener("change", handleDateChange);
+    document.getElementById("start-date-local").addEventListener("change", handleDateChange);
+    document.getElementById("end-date-local").addEventListener("change", handleDateChange);
+    document.getElementById("start-date-outstation").addEventListener("change", handleDateChange);
+    document.getElementById("end-date-outstation").addEventListener("change", handleDateChange);
     document.getElementById("bid-amount").addEventListener("input", handleDateChange);
+    document.getElementById("local-button").addEventListener("click", () => toggleRentalType("local", car));
+    document.getElementById("outstation-button").addEventListener("click", () => toggleRentalType("outstation", car));
+
+    // Set the initial rental type to "local"
+    toggleRentalType("local", car);
 
     document.getElementById("submit-bid").addEventListener("click", async (event) => {
         event.preventDefault();
-        const startDate = document.getElementById("start-date").value;
-        const endDate = document.getElementById("end-date").value;
+        const localForm = document.getElementById("local-form");
+        const outstationForm = document.getElementById("outstation-form");
+        const rentalType = localForm.style.display === "block" ? "local" : "outstation";
+        const startDate = rentalType === "local" ? document.getElementById("start-date-local").value : document.getElementById("start-date-outstation").value;
+        const endDate = rentalType === "local" ? document.getElementById("end-date-local").value : document.getElementById("end-date-outstation").value;
         const bidAmount = parseFloat(document.getElementById("bid-amount").value);
+
+
+        // Validate each field individually
+        if (!startDate) {
+            showToast("Start date is required.", "error");
+            return;
+        }
+        if (isNaN(Date.parse(startDate))) {
+            showToast("Start date must be a valid date.", "error");
+            return;
+        }
+        if (!endDate) {
+            showToast("End date is required.", "error");
+            return;
+        }
+        if (isNaN(Date.parse(endDate))) {
+            showToast("End date must be a valid date.", "error");
+            return;
+        }
+        if (new Date(endDate) < new Date(startDate)) {
+            showToast("End date must be after start date.", "error");
+            return;
+        }
+        if (isNaN(bidAmount) || bidAmount <= 0) {
+            showToast("Bid amount must be a valid number greater than 0.", "error");
+            return;
+        }
+        if (!rentalType) {
+            showToast("Rental type is required.", "error");
+            return;
+        }
+
         const existingBookings = await getAllItemsByIndex("bookings", "carId", carId);
         const isOverlapping = existingBookings.some(booking =>
-            isDateRangeOverlap(new Date(booking.from), new Date(booking.to), new Date(startDate), new Date(endDate))
+            isDateRangeOverlap(new Date(booking.fromTimestamp), new Date(booking.toTimestamp), new Date(startDate), new Date(endDate))
         );
-
         if (isOverlapping) {
-            showToast("This car is already booked for the selected dates. Please choose a different date range.","error");
+            showToast("This car is already booked for the selected dates. Please choose a different date range.", "error");
             return;
         }
-        if (!startDate || !endDate || !bidAmount) {
-            showToast("Please fill all fields.","error");
+        if (new Date(startDate) < new Date().setHours(0, 0, 0, 0)) {
+            showToast("Start date cannot be before today's date.", "error");
             return;
         }
-
-        if (new Date(startDate) < new Date()) return showToast("Start date cannot be before today's date.","error");
-
-
         if (new Date(startDate) > new Date(endDate)) {
-            showToast("Start date must be before end date.","error");
+            showToast("Start date must be before end date.", "error");
+            return;
+        }
+        if (rentalType === "local" && (new Date(endDate) - new Date(startDate)) > 24 * 60 * 60 * 1000) {
+            showToast("Local rentals can only be booked for less than 24 hours.", "error");
+            return;
+        }
+        const basePrice = rentalType === "local" ? car.rentalOptions.local.pricePerHour : car.rentalOptions.outstation.pricePerDay;
+        if (bidAmount < basePrice) {
+            showToast(`Your bid must be higher than the base price of the car! (₹${basePrice})`, "error");
             return;
         }
 
-        if (bidAmount < car.basePrice) {
-            showToast("Your bid must be higher than the base price of the car!","error");
-            return;
-        }
+        const user = await getItemByKey("users", userId);
 
         const bid = {
             bidId: generateRandomId('bid'),
-            userId,
-            username: getCookie("username"),
-            carId,
-            carName: car.carName,
-            ownerId: car.ownerId,
-            categoryId: car.categoryId,
-            ownerName: car.ownerName,
-            bidAmount,
-            from: startDate,
-            to: endDate,
+            fromTimestamp: startDate,
+            toTimestamp: endDate,
             status: "pending",
-            createdAt: new Date().toISOString().split('T')[0]
+            createdAt: new Date().toISOString(),
+            bidAmount,
+            rentalType,
+            bidBaseFare: basePrice,
+            user: {
+                userId: user.userId,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                paymentPreference: user.paymentPreference,
+                avgRating: user.avgRating,
+                ratingCount: user.ratingCount
+            },
+            car: {
+                carId,
+                carName: car.carName,
+                carType: car.carType,
+                city: car.city,
+                createdAt: car.createdAt,
+                description: car.description,
+                isAvailableForLocal: car.isAvailableForLocal,
+                isAvailableForOutstation: car.isAvailableForOutstation,
+                avgRating: car.avgRating,
+                ratingCount: car.ratingCount,
+                images: car.images,
+                featured: car.featured,
+                category: {
+                    categoryId: car.category.categoryId,
+                    categoryName: car.category.categoryName
+                },
+                owner: {
+                    userId: car.owner.userId,
+                    username: car.owner.username,
+                    email: car.owner.email,
+                    role: car.owner.role,
+                    isApproved: car.owner.isApproved,
+                    avgRating: car.owner.avgRating,
+                    ratingCount: car.owner.ratingCount,
+                    paymentPreference: car.owner.paymentPreference
+                },
+                rentalOptions: car.rentalOptions
+            }
         };
-
         await addItem("bids", bid);
-        showToast("Bid placed successfully!","info");
+        showToast("Bid placed successfully!", "info");
         window.location.href = "./mybiddings.html";
     });
 
     async function handleDateChange() {
-        const startDate = document.getElementById("start-date").value;
-        const endDate = document.getElementById("end-date").value;
+        const localForm = document.getElementById("local-form");
+        const outstationForm = document.getElementById("outstation-form");
+        const rentalType = localForm.style.display === "block" ? "local" : "outstation";
+        const startDate = rentalType === "local" ? document.getElementById("start-date-local").value : document.getElementById("start-date-outstation").value;
+        const endDate = rentalType === "local" ? document.getElementById("end-date-local").value : document.getElementById("end-date-outstation").value;
         const bidAmount = parseFloat(document.getElementById("bid-amount").value);
         const totalPriceDiv = document.getElementById("total-price-container");
+        const priceBreakupDiv = document.getElementById("price-breakup-container");
+        const currentPriceSpan = document.getElementById("current-price");
 
-        if (startDate && endDate && new Date(startDate) <= new Date(endDate)) {
+        const basePrice = rentalType === "local" ? car.rentalOptions.local.pricePerHour : car.rentalOptions.outstation.pricePerDay;
+        currentPriceSpan.textContent = basePrice.toFixed(2);
+
+        if (startDate && endDate && new Date(startDate) <= new Date(endDate) && !isNaN(bidAmount) && bidAmount > 0) {
             const overlappingBids = await getOverlappingBids(carId, startDate, endDate);
             const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
-            const price = bidAmount || car.basePrice;
-            const totalPrice = days * price;
-            document.getElementById('total-price').textContent = totalPrice.toFixed(2);
+            const totalPrice = rentalType === "local" ? basePrice * ((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60)) : days * basePrice;
+            const totalBidAmount = rentalType === "local" ? bidAmount * ((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60)) : days * bidAmount;
+
+            document.getElementById('total-price').textContent = totalBidAmount.toFixed(2);
             totalPriceDiv.style.display = "block";
+            priceBreakupDiv.innerHTML = `
+                <p>Base ${rentalType} price: ₹${basePrice.toFixed(2)}</p>
+                <p>Base total: ₹${totalPrice.toFixed(2)}</p>
+                <p>Bidding Amount: ₹${totalBidAmount.toFixed(2)}</p>
+            `;
+            priceBreakupDiv.style.display = "block";
             renderOverlappingBids(overlappingBids);
         } else {
             totalPriceDiv.style.display = "none";
+            priceBreakupDiv.style.display = "none";
             document.getElementById('total-price').textContent = '';
             document.getElementById("other-bids-list").innerHTML = "";
         }
@@ -139,7 +231,7 @@ async function renderCarDetails() {
 
     async function getOverlappingBids(carId, startDate, endDate) {
         const allBids = await getAllItemsByIndex("bids", "carId", carId);
-        return allBids.filter(bid => isDateRangeOverlap(new Date(bid.from), new Date(bid.to), new Date(startDate), new Date(endDate)));
+        return allBids.filter(bid => isDateRangeOverlap(new Date(bid.fromTimestamp), new Date(bid.toTimestamp), new Date(startDate), new Date(endDate)));
     }
 
     function isDateRangeOverlap(startDate1, endDate1, startDate2, endDate2) {
@@ -155,12 +247,12 @@ async function renderCarDetails() {
         }
         bids.forEach(bid => {
             const li = document.createElement("li");
-            li.textContent = `Current Highest Bid : $${bid.bidAmount} -> Date Range ${bid.from} to ${bid.to}`;
+            li.textContent = `Rental Type : ${rentalTypeText} -> Current Highest Bid : ₹${bid.bidAmount} ->From ${bid.fromTimestamp} to ${bid.toTimestamp}`;
             otherBidsList.appendChild(li);
         });
     }
 
-    const chatId = `${userId}_${car.ownerId}_${carId}`;
+    const chatId = `${userId}_${car.owner.userId}_${carId}`;
 
     document.getElementById("send-chat-message-btn").addEventListener("click", async () => {
         const messageInput = document.getElementById("chat-message-input");
@@ -168,40 +260,71 @@ async function renderCarDetails() {
         const message = messageInput.value.trim();
         const file = fileInput.files[0];
         if (message || file) {
-            await sendMessage(chatId, userId, car.ownerId, message, file);
+            await sendMessage(chatId, userId, car.owner.userId, message, file);
             messageInput.value = "";
             fileInput.value = "";
-            renderChatMessages(car.ownerId);
+            renderChatMessages(car.owner.userId);
         }
     });
 
-    renderChatMessages(car.ownerId);
+    renderChatMessages(car.owner.userId);
+}
+
+function toggleRentalType(type, car) {
+    const localForm = document.getElementById("local-form");
+    const outstationForm = document.getElementById("outstation-form");
+    const currentPriceSpan = document.getElementById("current-price");
+
+    if (type === "local") {
+        localForm.style.display = "block";
+        outstationForm.style.display = "none";
+        currentPriceSpan.textContent = car.rentalOptions.local.pricePerHour.toFixed(2);
+    } else {
+        localForm.style.display = "none";
+        outstationForm.style.display = "block";
+        currentPriceSpan.textContent = car.rentalOptions.outstation.pricePerDay.toFixed(2);
+    }
 }
 
 async function sendMessage(chatId, fromUserId, toUserId, message, file) {
     const newMessage = {
-        messageId: generateRandomId('msg'),
+        messageId: generateRandomId(),
         chatId,
-        fromUserId,
-        toUserId,
         message,
-        createdAt: new Date().toISOString(),
         hasAttachment: !!file,
-        attachment: file ? await readFileAsDataURL(file) : null
+        attachment: file ? await readFileAsDataURL(file) : null,
+        createdAt: new Date().toISOString(),
+        fromUser: {
+            userId: fromUserId,
+            username: (await getItemByKey("users", fromUserId)).username,
+            email: (await getItemByKey("users", fromUserId)).email
+        },
+        toUser: {
+            userId: toUserId,
+            username: (await getItemByKey("users", toUserId)).username,
+            email: (await getItemByKey("users", toUserId)).email
+        }
     };
 
     await addItem("messages", newMessage);
 
     const conversation = await getItemByKey("conversations", chatId) || {
         chatId,
-        participants: [fromUserId, toUserId],
         lastMessage: '',
-        lastTimestamp: ''
+        lastTimestamp: '',
+        owner: {
+            userId: toUserId,
+            username: (await getItemByKey("users", toUserId)).username,
+            email: (await getItemByKey("users", toUserId)).email
+        },
+        user: {
+            userId: fromUserId,
+            username: (await getItemByKey("users", fromUserId)).username,
+            email: (await getItemByKey("users", fromUserId)).email
+        }
     };
-
     conversation.lastMessage = message;
     conversation.lastTimestamp = newMessage.createdAt;
-
     await updateItem("conversations", conversation);
 }
 
@@ -209,22 +332,19 @@ async function renderChatMessages(ownerId) {
     const allMessages = await getAllItemsByIndex("messages", "chatId", `${userId}_${ownerId}_${getCarIdFromURL()}`);
     const chatMessagesContainer = document.getElementById("chat-messages");
     chatMessagesContainer.innerHTML = "";
-
     allMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
     if (allMessages.length === 0) {
         const car = await getItemByKey("cars", getCarIdFromURL());
-        chatMessagesContainer.innerHTML = `<div class="chat-message">Say Hi to ${car.ownerName}</div>`;
+        chatMessagesContainer.innerHTML = `<div class="chat-message">Say Hi to ${car.owner.username}</div>`;
         return;
     }
-
     allMessages.forEach(msg => {
         const messageElement = document.createElement("div");
-        messageElement.className = `chat-message ${msg.fromUserId === userId ? 'message-you' : 'message-owner'}`;
+        messageElement.className = `chat-message ${msg.fromUser.userId === userId ? 'message-you' : 'message-owner'}`;
         messageElement.innerHTML = `
     <div class="message-content">
         <span class="message-text">
-            <strong>${msg.fromUserId === userId ? 'You' : 'Owner'}:</strong> ${msg.message}
+            <strong>${msg.fromUser.userId === userId ? 'You' : 'Owner'}:</strong> ${msg.message}
         </span>
         <span class="timestamp">${new Date(msg.createdAt).toLocaleString()}</span>
     </div>
@@ -234,19 +354,16 @@ async function renderChatMessages(ownerId) {
     `;
         chatMessagesContainer.appendChild(messageElement);
     });
-
 }
 
 async function updateNavLinks() {
     const isAuthenticated = await checkAuth();
-    // const loginSignupLink = document.getElementById('login-signup-link');
     const logoutLink = document.getElementById('logout-link');
     const userDashboard = document.getElementById('user-dashboard-link');
     const ownerDashboard = document.getElementById('owner-dashboard-link');
 
     if (isAuthenticated) {
         userDashboard.style.display = 'block';
-        // loginSignupLink.style.display = 'none';
         logoutLink.style.display = 'block';
 
         const userId = getCookie("userId");
@@ -262,31 +379,32 @@ async function updateNavLinks() {
     } else {
         userDashboard.style.display = 'none';
         ownerDashboard.style.display = 'none';
-        // loginSignupLink.style.display = 'block';
         logoutLink.style.display = 'none';
     }
 }
 
 async function disableBookedDates(carId) {
     const bookings = await getAllItemsByIndex("bookings", "carId", carId);
-    const startDateInput = document.getElementById("start-date");
-    const endDateInput = document.getElementById("end-date");
+    const startDateLocalInput = document.getElementById("start-date-local");
+    const endDateLocalInput = document.getElementById("end-date-local");
+    const startDateOutstationInput = document.getElementById("start-date-outstation");
+    const endDateOutstationInput = document.getElementById("end-date-outstation");
 
     const disabledDates = new Set();
     bookings.forEach(booking => {
-        let currentDate = new Date(booking.from);
-        const toDate = new Date(booking.to);
+        let currentDate = new Date(booking.fromTimestamp);
+        const toDate = new Date(booking.toTimestamp);
         while (currentDate <= toDate) {
             disabledDates.add(currentDate.toISOString().split("T")[0]);
             currentDate.setDate(currentDate.getDate() + 1);
         }
     });
 
-    startDateInput.addEventListener("input", function () {
+    function handleDateInput(input, endDateInput) {
         endDateInput.disabled = false;
-        endDateInput.min = this.value;
+        endDateInput.min = input.value;
 
-        const selectedStartDate = new Date(this.value);
+        const selectedStartDate = new Date(input.value);
         let minValidEndDate = new Date(selectedStartDate);
         minValidEndDate.setDate(minValidEndDate.getDate() + 1);
 
@@ -295,31 +413,44 @@ async function disableBookedDates(carId) {
         }
 
         endDateInput.min = minValidEndDate.toISOString().split("T")[0];
+    }
+
+    startDateLocalInput.addEventListener("input", function () {
+        handleDateInput(this, endDateLocalInput);
     });
 
-    startDateInput.addEventListener("focus", function () {
-        this.setAttribute("min", new Date().toISOString().split("T")[0]);
+    startDateOutstationInput.addEventListener("input", function () {
+        handleDateInput(this, endDateOutstationInput);
+    });
 
-        this.addEventListener("change", function () {
+    function handleDateFocus(input) {
+        input.setAttribute("min", new Date().toISOString().split("T")[0]);
+
+        input.addEventListener("change", function () {
             if (disabledDates.has(this.value)) {
-                showToast("This date is already booked. Please select a different date.","error");
+                showToast("This date is already booked. Please select a different date.", "error");
                 this.value = "";
             }
         });
+    }
+
+    startDateLocalInput.addEventListener("focus", function () {
+        handleDateFocus(this);
     });
 
-    endDateInput.addEventListener("focus", function () {
-        this.addEventListener("change", function () {
-            if (disabledDates.has(this.value)) {
-                showToast("This date is already booked. Please select a different date.","error");
-                this.value = "";
-            }
-        });
+    startDateOutstationInput.addEventListener("focus", function () {
+        handleDateFocus(this);
+    });
+
+    endDateLocalInput.addEventListener("focus", function () {
+        handleDateFocus(this);
+    });
+
+    endDateOutstationInput.addEventListener("focus", function () {
+        handleDateFocus(this);
     });
 }
 
-renderCarDetails();
-updateNavLinks();
 document.getElementById('logout-link').addEventListener('click', (event) => {
     event.preventDefault();
     logout();
@@ -330,7 +461,7 @@ document.getElementById("send-chat-message-btn").addEventListener("click", funct
     const file = document.getElementById("chat-file-input").files[0];
 
     if (!message && !file) {
-        showToast("Please enter a message or select a file.","error");
+        showToast("Please enter a message or select a file.", "error");
         event.preventDefault();
     }
 });
@@ -338,16 +469,25 @@ document.getElementById("send-chat-message-btn").addEventListener("click", funct
 document.getElementById('bid-amount').addEventListener('input', function () {
     if (this.value.includes('-')) {
         showToast("Please enter a valid number", "error");
-        this.value = '';
+this.value = '';
     }
-    else if (parseFloat(this.value) > 1000) {
-        showToast("Bid amount cannot exceed 1000", "error");
+    else if (parseFloat(this.value) > 5000) {
+        showToast("Bid amount cannot exceed 5000", "error");
         this.value = '';
     }
 });
 
-document.getElementById('start-date').addEventListener('change', function () {
+document.getElementById('start-date-local').addEventListener('change', function () {
     const startDate = this.value;
-    const endDateInput = document.getElementById('end-date');
+    const endDateInput = document.getElementById('end-date-local');
     endDateInput.min = startDate;
 });
+
+document.getElementById('start-date-outstation').addEventListener('change', function () {
+    const startDate = this.value;
+    const endDateInput = document.getElementById('end-date-outstation');
+    endDateInput.min = startDate;
+});
+
+renderCarDetails();
+updateNavLinks();

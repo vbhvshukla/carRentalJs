@@ -1,6 +1,7 @@
 import { getItemsWithPagination, getAllItemsByIndex, getItemByKey, updateItem, deleteItem, getTotalItems } from "../utils/dbUtils.js";
 import { getCookie } from "../utils/cookie.js";
 import { checkAuth, logout } from "../utils/auth.js";
+import { showToast } from "../utils/toastUtils.js";
 
 const userId = getCookie("userId");
 if (!userId) window.location.href = "./login.html";
@@ -24,20 +25,30 @@ window.sortBookings = function (column) {
     loadUserBookings();
 }
 
+window.applyFilters = function () {
+    const filters = {
+        searchCar: document.getElementById("search-car").value,
+        startDate: document.getElementById("start-date-filter").value,
+        endDate: document.getElementById("end-date-filter").value,
+        maxAmount: document.getElementById("booking-amount-filter").value
+    };
+    loadUserBookings(1, filters);
+}
+
 function applyFilterConditions(booking, filters) {
-    if (filters.searchCar && !booking.carName.toLowerCase().includes(filters.searchCar.toLowerCase())) return false;
+    if (filters.searchCar && !booking.car.carName.toLowerCase().includes(filters.searchCar.toLowerCase())) return false;
     if (filters.startDate && new Date(booking.from) < new Date(filters.startDate)) return false;
     if (filters.endDate && new Date(booking.to) > new Date(filters.endDate)) return false;
-    if (filters.maxAmount && booking.bidPrice > filters.maxAmount) return false;
+    if (filters.maxAmount && booking.bid.bidAmount > filters.maxAmount) return false;
 
     const currentDate = new Date();
-    const bookingStartDate = new Date(booking.from);
-    const bookingEndDate = new Date(booking.to);
+    const bookingStartDate = new Date(booking.fromTimestamp);
+    const bookingEndDate = new Date(booking.toTimestamp);
 
     if (filters.status) {
-        if (filters.status === "cancelled" && !booking.isCancelled) return false;
-        if (filters.status === "active" && (booking.isCancelled || bookingEndDate < currentDate)) return false;
-        if (filters.status === "past" && (bookingEndDate >= currentDate || booking.isCancelled)) return false;
+        if (filters.status === "cancelled" && booking.status !== "cancelled") return false;
+        if (filters.status === "active" && (booking.status === "cancelled" || bookingEndDate < currentDate)) return false;
+        if (filters.status === "past" && (bookingEndDate >= currentDate || booking.status === "cancelled")) return false;
     }
 
     return true;
@@ -55,28 +66,11 @@ function updatePaginationControls(currentPage, totalItems) {
         button.onclick = () => loadUserBookings(i);
         paginationControls.appendChild(button);
     }
-
 }
 
-function redirectToChat(chatId, bookingId, startDate, endDate, carName, ownerId) {
-    const context = {
-        chatId,
-        bookingId,
-        startDate,
-        endDate,
-        carName,
-        ownerId
-    };
+function redirectToChat(chatId) {
     const url = `./view-umessage.html?chatId=${chatId}`;
     window.location.href = url;
-}
-
-function showToast(message, type = "success") {
-    const toast = document.createElement("div");
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    document.getElementById("toast-container").appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
 }
 
 function highlightActiveLink() {
@@ -101,7 +95,7 @@ async function cancelBooking(bookingId) {
                 showToast("Booking not found!", "error");
                 return;
             }
-            booking.isCancelled = true;
+            booking.status = "cancelled";
             await updateItem("bookings", booking);
 
             showToast("Booking cancelled successfully!");
@@ -143,14 +137,29 @@ async function updateNavLinks() {
 
 async function loadUserBookings(page = 1, filters = {}) {
     const allBookings = await getItemsWithPagination("bookings", page, ITEMS_PER_PAGE);
-    const bookings = allBookings.filter(booking => booking.userId === userId && !booking.isCancelled);
+    const userBookings = allBookings.filter(booking => booking.bid.user.userId === userId && booking.status !== "cancelled");
 
-    bookings.forEach(booking => {
-        booking.totalAmount = ((new Date(booking.to) - new Date(booking.from)) / (1000 * 60 * 60 * 24) + 1) * booking.bidPrice;
+    // Apply filters
+    const filteredBookings = userBookings.filter(booking => applyFilterConditions(booking, filters));
+
+    // Calculate total amount for each booking
+    filteredBookings.forEach(booking => {
+        const fromDate = new Date(booking.fromTimestamp);
+        const toDate = new Date(booking.toTimestamp);
+        const diffTime = Math.abs(toDate - fromDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+        if (booking.rentalType === "local") {
+            const totalHours = diffTime / (1000 * 60 * 60);
+            booking.totalAmount = booking.bid.car.rentalOptions.local.pricePerHour * totalHours + booking.extraKmCharges + booking.extraHourCharges;
+        } else if (booking.rentalType === "outstation") {
+            booking.totalAmount = booking.bid.car.rentalOptions.outstation.pricePerDay * diffDays + booking.extraKmCharges + booking.extraHourCharges;
+        }
     });
 
+    // Apply sorting
     if (sortColumn) {
-        bookings.sort((a, b) => {
+        filteredBookings.sort((a, b) => {
             let valA = a[sortColumn];
             let valB = b[sortColumn];
 
@@ -163,10 +172,11 @@ async function loadUserBookings(page = 1, filters = {}) {
         });
     }
 
+    // Update table with filtered and sorted bookings
     const tableBody = document.querySelector("#booking-table tbody");
     tableBody.innerHTML = "";
 
-    if (bookings.length === 0) {
+    if (filteredBookings.length === 0) {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
         cell.colSpan = 9;
@@ -175,32 +185,34 @@ async function loadUserBookings(page = 1, filters = {}) {
         row.appendChild(cell);
         tableBody.appendChild(row);
     } else {
-        bookings.forEach(booking => {
-            const chatId = `${userId}_${booking.ownerId}_${booking.carId}`;
-            const endDate = new Date(booking.to);
+        filteredBookings.forEach(booking => {
+            const chatId = `${userId}_${booking.bid.car.owner.userId}_${booking.bid.car.carId}`;
+            const endDate = new Date(booking.toTimestamp);
             const today = new Date();
             const showRatingButton = today > endDate;
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${booking.bookingId}</td>
-                <td>${booking.carName}</td>
-                <td>${booking.ownerName}</td>
-                <td>$${booking.bidPrice}</td>
-                <td>${booking.from}</td>
-                <td>${booking.to}</td>
-                <td>${booking.createdAt}</td>
+                <td>${booking.bid.car.carName}</td>
+                <td>${booking.bid.car.owner.username}</td>
+                <td>$${booking.bid.bidAmount}</td>
+                <td>${booking.fromTimestamp}</td>
+                <td>${booking.toTimestamp}</td>
+                <td>${new Date(booking.createdAt).toLocaleDateString()}</td>
                 <td>$${booking.totalAmount.toFixed(2)}</td>
                 <td>
                     <button class="chat-button" onclick="redirectToChat('${chatId}')">Chat</button>
                     <button class="cancel-button" onclick="cancelBooking('${booking.bookingId}')">Cancel</button>
-                    ${showRatingButton ? `<button class="rate-button" onclick="openRatingModal('${booking.carId}', '${booking.carName}')">Rate Car</button>` : ""}
+                    ${showRatingButton ? `<button class="rate-button" onclick="openRatingModal('${booking.bid.car.carId}', '${booking.bid.car.carName}')">Rate Car</button>` : ""}
                 </td>
             `;
             tableBody.appendChild(row);
         });
     }
 
-    updatePaginationControls(page, allBookings.length);
+    // Update pagination controls
+    const totalItems = await getTotalItems("bookings");
+    updatePaginationControls(page, totalItems);
 }
 
 function openRatingModal(carId, carName) {
@@ -214,26 +226,20 @@ document.getElementById("submit-rating").addEventListener("click", async () => {
     const carId = document.getElementById("rating-modal").getAttribute("data-car-id");
     const rating = parseFloat(document.getElementById("user-rating").value);
     const ratingError = document.getElementById("rating-error");
-
     if (isNaN(rating) || rating < 0 || rating > 5) {
         ratingError.classList.remove("hidden");
         return;
     }
-
     ratingError.classList.add("hidden");
-
     try {
         const car = await getItemByKey("cars", carId);
         if (!car) {
             showToast("Car not found!", "error");
             return;
         }
-
         car.ratingCount = car.ratingCount ? car.ratingCount + 1 : 1;
         car.avgRating = ((car.avgRating * (car.ratingCount - 1)) + rating) / car.ratingCount;
-
         await updateItem("cars", car);
-
         showToast("Rating submitted successfully!");
         document.getElementById("rating-modal").classList.add("hidden");
     } catch (error) {
@@ -255,15 +261,6 @@ loadUserBookings();
 updateNavLinks();
 highlightActiveLink();
 
-window.applyFilters = function () {
-    const filters = {
-        searchCar: document.getElementById("search-car").value,
-        startDate: document.getElementById("start-date-filter").value,
-        endDate: document.getElementById("end-date-filter").value,
-        maxAmount: document.getElementById("booking-amount-filter").value
-    };
-    loadUserBookings(1, filters);
-}
 window.redirectToChat = redirectToChat;
 window.cancelBooking = cancelBooking;
 window.openRatingModal = openRatingModal;

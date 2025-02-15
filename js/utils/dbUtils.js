@@ -1,13 +1,59 @@
 import { openDb, getObjectStore } from "../data/dbService.js";
+import { dbSchema } from "../../dbSchema.js";
+
+// Function to validate an object against a schema
+function validateSchema(schema, data) {
+    if (typeof schema !== "object" || schema === null) return false;
+
+    const schemaKeys = Object.keys(schema);
+    const dataKeys = Object.keys(data);
+
+    // Ensure no extra or missing fields
+    if (schemaKeys.length !== dataKeys.length || !dataKeys.every(key => schemaKeys.includes(key))) {
+        return false;
+    }
+
+    return true;
+}
 
 async function addItem(storeName, item) {
     try {
+        if (!dbSchema[storeName]) {
+            throw new Error(`Invalid store: ${storeName}`);
+        }
+
+        if (!validateSchema(dbSchema[storeName], item)) {
+            throw new Error(`Invalid schema for ${storeName}. Data rejected: ${JSON.stringify(item)}`);
+        }
+
         await openDb();
         const store = getObjectStore(storeName, "readwrite");
         return new Promise((resolve, reject) => {
             const request = store.add(item);
             request.onsuccess = () => resolve(item);
             request.onerror = (event) => reject(new Error(`Add failed: ${event.target.error}`));
+        });
+    } catch (error) {
+        return Promise.reject(new Error(`Database error: ${error.message}`));
+    }
+}
+
+async function updateItem(storeName, item) {
+    try {
+        if (!dbSchema[storeName]) {
+            throw new Error(`Invalid store: ${storeName}`);
+        }
+
+        if (!validateSchema(dbSchema[storeName], item)) {
+            throw new Error(`Invalid schema for ${storeName}. Data rejected: ${JSON.stringify(item)}`);
+        }
+
+        await openDb();
+        const store = getObjectStore(storeName, "readwrite");
+        return new Promise((resolve, reject) => {
+            const request = store.put(item);
+            request.onsuccess = () => resolve(item);
+            request.onerror = (event) => reject(new Error(`Update failed: ${event.target.error}`));
         });
     } catch (error) {
         return Promise.reject(new Error(`Database error: ${error.message}`));
@@ -76,20 +122,6 @@ async function getAllItems(storeName) {
     }
 }
 
-async function updateItem(storeName, item) {
-    try {
-        await openDb();
-        const store = getObjectStore(storeName, "readwrite");
-        return new Promise((resolve, reject) => {
-            const request = store.put(item);
-            request.onsuccess = () => resolve(item);
-            request.onerror = (event) => reject(new Error(`Update failed: ${event.target.error}`));
-        });
-    } catch (error) {
-        return Promise.reject(new Error(`Database error: ${error.message}`));
-    }
-}
-
 async function deleteItem(storeName, key) {
     try {
         await openDb();
@@ -104,41 +136,37 @@ async function deleteItem(storeName, key) {
     }
 }
 
-async function getItemsWithPagination(storeName,page=1,itemsPerPage = 5){
+async function getItemsWithPagination(storeName, page = 1, itemsPerPage = 5) {
     try {
         await openDb();
-        const store = getObjectStore(storeName,"readonly");
-        return new Promise((resolve,reject)=>{
+        const store = getObjectStore(storeName, "readonly");
+        return new Promise((resolve, reject) => {
             const request = store.openCursor();
             const items = [];
             let count = 0;
-            const start = (page-1)*itemsPerPage;
-            const end = start+itemsPerPage;
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
 
-            request.onsuccess=(event)=>{
+            request.onsuccess = (event) => {
                 const cursor = event.target.result;
-                if(cursor){
-                    //what we are doing is if the cursor's current item is added to the
-                    //items if it falls within the current page range and then the counter is incremented
-                    if(count>=start && count < end){
+                if (cursor) {
+                    if (count >= start && count < end) {
                         items.push(cursor.value);
                     }
                     count++;
-                    if(count<end){
+                    if (count < end) {
                         cursor.continue();
-                    }
-                    else{
+                    } else {
                         resolve(items);
                     }
-                }
-                else{
+                } else {
                     resolve(items);
                 }
             };
-            request.onerror = (event) =>reject(new Error(`Fetch Failed :: ${event.target.error}`))
+            request.onerror = (event) => reject(new Error(`Fetch Failed :: ${event.target.error}`))
         });
     }
-    catch(error){
+    catch (error) {
         return Promise.reject(new Error(`Database error: ${error.message}`));
     }
 }
@@ -158,6 +186,7 @@ async function getTotalItems(storeName) {
 }
 
 async function getItemsByTimeRange(storeName, indexName, key, days) {
+    console.log(storeName, indexName, key, days)
     return new Promise((resolve, reject) => {
         openDb().then(() => {
             const store = getObjectStore(storeName, "readonly");
@@ -187,6 +216,7 @@ async function getItemsByTimeRange(storeName, indexName, key, days) {
         });
     });
 }
+
 async function getAllItemsByTimeRange(storeName, indexName, days) {
     return new Promise((resolve, reject) => {
         openDb().then(() => {
@@ -216,4 +246,5 @@ async function getAllItemsByTimeRange(storeName, indexName, days) {
         });
     });
 }
-export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem ,getItemByKey,getAllItemsByIndex,getItemsWithPagination,getTotalItems,getItemsByTimeRange,getAllItemsByTimeRange};
+
+export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem, getItemByKey, getAllItemsByIndex, getItemsWithPagination, getTotalItems, getItemsByTimeRange, getAllItemsByTimeRange };

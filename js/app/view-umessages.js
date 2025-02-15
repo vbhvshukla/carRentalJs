@@ -1,4 +1,4 @@
-import { getAllItemsByIndex, getItemByKey } from "../utils/dbUtils.js";
+import { getAllItems, getItemByKey } from "../utils/dbUtils.js";
 import { getCookie } from "../utils/cookie.js";
 import { checkAuth, logout } from "../utils/auth.js";
 
@@ -9,20 +9,22 @@ async function loadConversations() {
     const messageList = document.getElementById("message-list");
     messageList.innerHTML = '<p class="no-messages">Loading conversations...</p>';
 
-    let conversations = await getAllItemsByIndex("conversations", "participants", userId);
+    let conversations = await getAllItems("conversations");
+
+    // Filter conversations where the user is either the owner or the user
+    conversations = conversations.filter(conversation => conversation.owner.userId === userId || conversation.user.userId === userId);
 
     if (!conversations.length) {
         messageList.innerHTML = '<p class="no-messages">No conversations found.</p>';
         return;
     }
 
-    conversations.sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
+    conversations.sort((a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp));
 
     messageList.innerHTML = "";
 
     for (const conversation of conversations) {
-        const otherParticipantId = conversation.participants.find(id => id !== userId);
-        const otherUser = await getItemByKey("users", otherParticipantId);
+        const otherParticipant = conversation.owner.userId === userId ? conversation.user : conversation.owner;
         const lastMessage = conversation.lastMessage || "No messages yet.";
         const timestamp = conversation.lastTimestamp ? new Date(conversation.lastTimestamp).toLocaleString() : "N/A";
 
@@ -31,9 +33,9 @@ async function loadConversations() {
         messageItem.onclick = () => redirectToChat(conversation.chatId);
 
         messageItem.innerHTML = `
-            <img src="${otherUser.profileImage || '../assets/images/profile.jpg'}" alt="Profile">
+            <img src="${otherParticipant.profileImage || '../assets/images/profile.jpg'}" alt="Profile">
             <div class="message-content">
-                <div class="name">${otherUser.username}</div>
+                <div class="name">${otherParticipant.username}</div>
                 <div class="last-message">${lastMessage}</div>
                 <div class="timestamp">${timestamp}</div>
             </div>

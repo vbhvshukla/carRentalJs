@@ -1,4 +1,4 @@
-import { getAllItemsByIndex, getItemByKey } from "../utils/dbUtils.js";
+import { getAllItems, getItemByKey } from "../utils/dbUtils.js";
 import { getCookie } from "../utils/cookie.js";
 import { checkAuth, logout } from "../utils/auth.js";
 
@@ -17,39 +17,29 @@ async function updateNavLinks() {
     if (isAuthenticated) {
         userDashboard.style.display = 'block';
         logoutLink.style.display = 'block';
-
-        const userId = getCookie("userId");
-        const user = await getItemByKey("users", userId);
-        const role = user.role;
-        const isApproved = user.isApproved;
-
-       
     } else {
         userDashboard.style.display = 'none';
         logoutLink.style.display = 'none';
     }
 }
 
-async function getUserNames(participants) {
-    const userPromises = participants.map(participantId => getItemByKey("users", participantId));
-    const users = await Promise.all(userPromises);
-    return users.map(user => user.username).join(", ");
-}
-
 async function loadConversations() {
-    const conversations = await getAllItemsByIndex("conversations", "participants", userId);
+    const conversations = await getAllItems("conversations");
     const messageList = document.getElementById("message-list");
     const noConversations = document.getElementById("no-conversations");
     messageList.innerHTML = "";
 
-    if (conversations.length === 0) {
-        console.log("getting inside");
+    console.log(conversations);
+    console.log("User id is :: ", userId);
+    const ownerConversations = conversations.filter(conversation => conversation.owner.userId === userId);
+
+    console.log(ownerConversations);
+
+    if (ownerConversations.length === 0) {
         noConversations.classList.remove("hidden");
     } else {
         noConversations.classList.add("hidden");
-        for (const conversation of conversations) {
-            const otherParticipantId = conversation.participants.find(id => id !== userId);
-            const otherUser = await getItemByKey("users", otherParticipantId);
+        for (const conversation of ownerConversations) {
             const lastMessage = conversation.lastMessage;
             const timestamp = new Date(conversation.lastTimestamp).toLocaleString();
 
@@ -58,9 +48,9 @@ async function loadConversations() {
             messageItem.onclick = () => redirectToChat(conversation.chatId);
 
             messageItem.innerHTML = `
-                <img src="${otherUser.profileImage || '../assets/images/profile.jpg'}" alt="Profile Image">
+                <img src="${conversation.userProfileImage || '../assets/images/profile.jpg'}" alt="Profile Image">
                 <div class="message-content">
-                    <div class="name">${otherUser.username}</div>
+                    <div class="name">${conversation.user.username}</div>
                     <div class="last-message">${lastMessage}</div>
                     <div class="timestamp">${timestamp}</div>
                 </div>
@@ -96,6 +86,6 @@ loadConversations();
 updateNavLinks();
 
 document.getElementById('logout-link').addEventListener('click', (event) => {
-        event.preventDefault();
-        logout();
+    event.preventDefault();
+    logout();
 });
