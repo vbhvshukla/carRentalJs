@@ -135,12 +135,18 @@
             <span class="close">&times;</span>
             <h2>Add Extra Charges</h2>
             <form id="extra-charges-form">
-                <label for="extraKmCharges">Extra Km Charges:</label>
-                <input type="number" id="extraKmCharges" name="extraKmCharges" step="0.01">
-                <label for="extraHourCharges">Extra Hour Charges:</label>
-                <input type="number" id="extraHourCharges" name="extraHourCharges" step="0.01">
-                <label for="extraDayCharges">Extra Day Charges:</label>
-                <input type="number" id="extraDayCharges" name="extraDayCharges" step="0.01">
+                <div id="extraKmField">
+                    <label for="extraKm">Extra Km:</label>
+                    <input type="number" id="extraKm" name="extraKm" step="1" min="0">
+                </div>
+                <div id="extraHoursField">
+                    <label for="extraHours">Extra Hours:</label>
+                    <input type="number" id="extraHours" name="extraHours" step="1" min="0">
+                </div>
+                <div id="extraDaysField" class="hidden">
+                    <label for="extraDays">Extra Days:</label>
+                    <input type="number" id="extraDays" name="extraDays" step="1" min="0">
+                </div>
                 <button type="submit">Update Total Amount</button>
             </form>
         </div>

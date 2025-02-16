@@ -33,7 +33,6 @@ function openDb() {
         carStore.createIndex("ownerId", "owner.userId"); // Owner's ID for queries
         carStore.createIndex("categoryId", "category.categoryId"); // Category ID for filtering
         carStore.createIndex("city", "city"); // To allow filtering by city
-
       }
 
       if (!db.objectStoreNames.contains("categories")) {
@@ -72,7 +71,6 @@ function openDb() {
         bidStore.createIndex("ownerId", "car.owner.userId");
         bidStore.createIndex("fromTimestamp", "fromTimestamp");
       }
-
 
       if (!db.objectStoreNames.contains("conversations")) {
         const conversationStore = db.createObjectStore("conversations", {

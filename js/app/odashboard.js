@@ -251,20 +251,40 @@ async function renderBookings() {
     }
 
     paginatedBookings.forEach(booking => {
-        const totalAmount = calculateTotalAmount(booking.bid, booking.fromTimestamp, booking.toTimestamp);
+        const totalAmount = booking.totalFare ? parseFloat(booking.totalFare) : calculateTotalAmount(booking.bid, booking.fromTimestamp, booking.toTimestamp);
         const rentalTypeLabel = booking.rentalType === "local" ? "Local" : "Outstation";
         const row = `<tr>
             <td>${booking.bid.car.carName}</td>
-            <td>$${booking.baseFare}</td>
-            <td>$${totalAmount.toFixed(2)}</td>
+            <td>₹${booking.baseFare}</td>
+            <td>₹${totalAmount.toFixed(2)}</td>
             <td>${booking.bid.user.username}</td>
             <td>${booking.fromTimestamp}</td>
             <td>${booking.toTimestamp}</td>
             <td>${new Date(booking.createdAt).toLocaleDateString()}</td>
             <td>${rentalTypeLabel}</td>
+            <td>${isBookingOver(booking.toTimestamp) ? renderExtraChargesButton(booking.bookingId) : '-'}</td>
         </tr>`;
         tableBody.innerHTML += row;
     });
+
+    document.querySelectorAll(".extra-charges-btn").forEach(button => {
+        button.addEventListener("click", () => {
+            const bookingId = button.getAttribute("data-booking-id");
+            const booking = bookings.find(b => b.bookingId === bookingId);
+            document.getElementById("extra-charges-modal").style.display = "block";
+            document.getElementById("extra-charges-form").setAttribute("data-booking-id", bookingId);
+            if (booking.rentalType === "local") {
+                document.getElementById("extraKmField").classList.remove("hidden");
+                document.getElementById("extraHoursField").classList.remove("hidden");
+                document.getElementById("extraDaysField").classList.add("hidden");
+            } else if (booking.rentalType === "outstation") {
+                document.getElementById("extraKmField").classList.remove("hidden");
+                document.getElementById("extraHoursField").classList.add("hidden");
+                document.getElementById("extraDaysField").classList.remove("hidden");
+            }
+        });
+    });
+
     togglePaginationButtons("bookings-pagination", currentBookingsPage, bookings.length);
     document.getElementById("bookings-page-info").textContent = `Page ${currentBookingsPage} of ${Math.ceil(bookings.length / itemsPerPage)}`;
 }
@@ -379,7 +399,94 @@ document.getElementById('logout-link').addEventListener('click', (event) => {
     logout();
 });
 
+function isBookingOver(toDate) {
+    const now = new Date();
+    return new Date(toDate) < now;
+}
+
+function renderExtraChargesButton(bookingId) {
+    return `<button class="extra-charges-btn" data-booking-id="${bookingId}">Add Extra Charges</button>`;
+}
+
+async function updateFare(bookingId) {
+    const booking = bookings.find(b => b.bookingId === bookingId);
+    const extraKm = parseFloat(document.getElementById("extraKm").value) || 0;
+    const extraHours = parseFloat(document.getElementById("extraHours").value) || 0;
+    const extraDays = parseFloat(document.getElementById("extraDays").value) || 0;
+
+    console.log("extraKm:", extraKm);
+    console.log("extraHours:", extraHours);
+    console.log("extraDays:", extraDays);
+
+    let extraDayCharges = 0;
+
+    if (booking.rentalType === "local") {
+        const maxKmLimit = booking.bid.car.rentalOptions.local.maxKmPerHour * extraHours;
+        booking.extraKmCharges = extraKm > maxKmLimit ? (extraKm - maxKmLimit) * booking.bid.car.rentalOptions.local.extraKmRate : 0;
+        booking.extraHourCharges = extraHours * booking.bid.car.rentalOptions.local.extraHourRate;
+    } else if (booking.rentalType === "outstation") {
+        booking.extraKmCharges = extraKm * booking.bid.car.rentalOptions.outstation.extraKmRate;
+        if (extraHours < 8) {
+            booking.extraHourCharges = extraHours * booking.bid.car.rentalOptions.outstation.extraHourlyRate;
+        } else {
+            booking.extraHourCharges = 0;
+            extraDayCharges = extraDays * booking.bid.car.rentalOptions.outstation.extraDayRate;
+        }
+
+        // Calculate extra km charges if the user exceeds the maxKmLimitPerDay
+        const from = new Date(booking.fromTimestamp);
+        const to = new Date(booking.toTimestamp);
+        const diffTime = Math.abs(to - from);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        const maxKmLimit = booking.bid.car.rentalOptions.outstation.maxKmLimitPerDay * diffDays;
+        if (extraKm > maxKmLimit) {
+            booking.extraKmCharges += (extraKm - maxKmLimit) * booking.bid.car.rentalOptions.outstation.extraKmRate;
+        }
+    }
+
+    console.log("extraKmCharges:", booking.extraKmCharges);
+    console.log("extraHourCharges:", booking.extraHourCharges);
+    console.log("extraDayCharges:", extraDayCharges);
+
+    const baseFare = calculateTotalAmount(booking.bid, booking.fromTimestamp, booking.toTimestamp);
+    console.log("baseFare:", baseFare);
+
+    booking.totalFare = baseFare + (booking.extraKmCharges || 0) + (booking.extraHourCharges || 0) + extraDayCharges;
+    console.log("totalFare:", booking.totalFare);
+
+    // Ensure all required fields are present and correctly formatted
+    const updatedBooking = {
+        bookingId: booking.bookingId,
+        fromTimestamp: booking.fromTimestamp,
+        toTimestamp: booking.toTimestamp,
+        status: booking.status,
+        createdAt: booking.createdAt,
+        rentalType: booking.rentalType,
+        bid: booking.bid,
+        baseFare: booking.baseFare,
+        extraKmCharges: booking.extraKmCharges || 0,
+        extraHourCharges: booking.extraHourCharges || 0,
+        totalFare: booking.totalFare
+    };
+
+    await updateItem("bookings", updatedBooking);
+    alert(`Total fare updated to $${booking.totalFare.toFixed(2)}`);
+    await fetchData();
+}
+
+document.getElementById("extra-charges-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const bookingId = event.target.getAttribute("data-booking-id");
+    await updateFare(bookingId);
+    document.getElementById("extra-charges-modal").style.display = "none";
+});
+
+document.querySelector(".close").addEventListener("click", () => {
+    document.getElementById("extra-charges-modal").style.display = "none";
+});
+
 highlightActiveLink();
 fetchData();
 updateNavLinks();
+
 

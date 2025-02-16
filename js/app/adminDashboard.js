@@ -2,6 +2,7 @@ import { getTotalItems, getAllItems, getItemByKey, updateItem, deleteItem, addIt
 import { setCookie, getCookie } from "../utils/cookie.js";
 import { checkAuth } from "../utils/auth.js";
 import { generateRandomId } from "../utils/generateId.js";
+// import CryptoJS from "crypto-js";
 
 const ITEMS_PER_PAGE = 5;
 const userId = getCookie("userId");
@@ -16,9 +17,9 @@ let userSortDirection = 'asc';
 let carSortField = null;
 let carSortDirection = 'asc';
 
-// if (!user || user.role !== "admin") {
-//     window.location.href = "../views/login.html";
-// }
+if (!user || user.role !== "admin") {
+    window.location.href = "../views/login.html";
+}
 
 async function loadUsers() {
     const users = await getAllItems("users");
@@ -41,7 +42,7 @@ async function loadUsers() {
             <td>${user.username}</td>
             <td>${user.email}</td>
             <td>${user.role}</td>
-            <td>${user.rating || "N/A"}</td>
+            <td>${user.avgRating || "N/A"}</td>
             <td>${user.ratingCount || 0}</td>
             <td>${user.isApproved ? "Yes" : "No"}</td>
             <td>
@@ -73,13 +74,13 @@ async function loadCars() {
         const row = document.createElement("tr");
         row.innerHTML = `
             <td>${car.carName}</td>
-            <td>${car.categoryName}</td>
-            <td>${car.ownerName}</td>
+            <td>${car.category.categoryName}</td>
+            <td>${car.owner.username}</td>
             <td>${car.city}</td>
-            <td>$${car.basePrice}</td>
-            <td>${car.rating || "N/A"}</td>
+            <td>${car.rentalOptions.local.pricePerHour}</td>
+            <td>${car.avgRating || "N/A"}</td>
             <td>${car.ratingCount || 0}</td>
-            <td>${car.availability ? "Yes" : "No"}</td>
+            <td>${car.isAvailableForLocal || car.isAvailableForOutstation ? "Yes" : "No"}</td>
         `;
         carTableBody.appendChild(row);
     });
@@ -106,9 +107,9 @@ async function loadCategories() {
 
 async function loadAnalytics() {
     const analytics = [
-        { title: "Total Users", value: 100 },
-        { title: "Total Cars", value: 50 },
-        { title: "Total Categories", value: 10 },
+        { title: "Total Users", value: await getTotalItems("users") },
+        { title: "Total Cars", value: await getTotalItems("cars") },
+        { title: "Total Categories", value: await getTotalItems("categories") },
     ];
     const analyticsContainer = document.getElementById("analytics");
     analyticsContainer.innerHTML = "";
@@ -132,7 +133,7 @@ function showUserApprovalModal(userId) {
             <p><strong>Username:</strong> ${user.username}</p>
             <p><strong>Email:</strong> ${user.email}</p>
             <p><strong>Role:</strong> ${user.role}</p>
-            <p><strong>Rating:</strong> ${user.rating || "N/A"}</p>
+            <p><strong>Rating:</strong> ${user.avgRating || "N/A"}</p>
             <p><strong>Approved:</strong> ${user.isApproved ? "Yes" : "No"}</p>
             ${user.verificationFile ? (user.verificationFile.startsWith('data:image/') ? `<img src="${user.verificationFile}" alt="Verification Image" class="verification-image">` : `<a href="${user.verificationFile}" download>Download Verification File</a>`) : ''}
         `;
@@ -293,13 +294,13 @@ async function loadCarsWithPagination(page = 1) {
         const row = document.createElement("tr");
         row.innerHTML = `
             <td>${car.carName}</td>
-            <td>${car.categoryName}</td>
-            <td>${car.ownerName}</td>
+            <td>${car.category.categoryName}</td>
+            <td>${car.owner.username}</td>
             <td>${car.city}</td>
-            <td>${car.basePrice}</td>
-            <td>${car.rating || "N/A"}</td>
+            <td>${car.rentalOptions.local.pricePerHour}</td>
+            <td>${car.avgRating || "N/A"}</td>
             <td>${car.ratingCount || 0}</td>
-            <td>${car.availability ? "Yes" : "No"}</td>
+            <td>${car.isAvailableForLocal || car.isAvailableForOutstation ? "Yes" : "No"}</td>
         `;
         carTableBody.appendChild(row);
     });
@@ -326,7 +327,7 @@ async function loadUsersWithPagination(page = 1) {
             <td>${user.username}</td>
             <td>${user.email}</td>
             <td>${user.role}</td>
-            <td>${user.rating || "N/A"}</td>
+            <td>${user.avgRating || "N/A"}</td>
             <td>${user.ratingCount || 0}</td>
             <td>${user.isApproved ? "Yes" : "No"}</td>
             <td>
@@ -369,11 +370,37 @@ function addSortingEventListeners() {
     });
 }
 
+async function addAdminUser() {
+    const existingAdmin = await getAllItems("users").then(users => users.find(user => user.email === "admin@example.com"));
+    if (existingAdmin) {
+        console.log("Admin user already exists.");
+        return;
+    }
+
+    const adminUser = {
+        userId: generateRandomId(),
+        username: "admin",
+        email: "admin@example.com",
+        password: CryptoJS.SHA256("Rishu578@").toString(),
+        role: "admin",
+        isApproved: true,
+        createdAt: new Date().toISOString(),
+        ratingCount: 0,
+        paymentPreference: "",
+        avgRating: 0,
+        verificationFile: "",
+    };
+
+    await addItem("users", adminUser);
+    console.log("Admin user added successfully.");
+}
+
 loadUsersWithPagination();
 loadCarsWithPagination();
 loadCategories();
 updateNavLinks();
 addSortingEventListeners();
+addAdminUser();
 
 window.showUserApprovalModal = showUserApprovalModal;
 window.closeModal = closeModal;

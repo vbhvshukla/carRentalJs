@@ -1,4 +1,4 @@
-import { getAllItems, getAllItemsByTimeRange, getItemByKey, updateItem } from "../utils/dbUtils.js";
+import { getAllItems, getAllItemsByTimeRange, getItemByKey, getAllItemsByIndex, updateItem } from "../utils/dbUtils.js";
 import { checkAuth, checkAdmin } from "../utils/auth.js";
 import { getCookie, setCookie } from "../utils/cookie.js";
 
@@ -19,14 +19,14 @@ async function initAnalytics() {
     const users = await getAllItems("users");
     const cars = await getAllItems("cars");
     const categories = await getAllItems("categories");
-    const bookings = await getAllItemsByTimeRange("bookings", "createdAt", days);
-    const bids = await getAllItemsByTimeRange("bids", "createdAt", days);
+    const bookings = await getAllItemsByTimeRange("bookings", "fromTimestamp", days);
+    const bids = await getAllItemsByTimeRange("bids", "fromTimestamp", days);
     displayTotals({ users, bookings, bids, cars });
     generateCharts({ bookings, bids, cars, categories, users, days });
     document.getElementById("time-range").addEventListener("change", async (event) => {
         const days = parseInt(event.target.value, 10);
-        const filteredBookings = await getAllItemsByTimeRange("bookings", "createdAt", days);
-        const filteredBids = await getAllItemsByTimeRange("bids", "createdAt", days);
+        const filteredBookings = await getAllItemsByTimeRange("bookings", "fromTimestamp", days);
+        const filteredBids = await getAllItemsByTimeRange("bids", "fromTimestamp", days);
         displayTotals({ users, bookings: filteredBookings, bids: filteredBids, cars });
         generateCharts({ bookings: filteredBookings, bids: filteredBids, cars, categories, users, days });
     });
@@ -42,7 +42,7 @@ function displayTotals({ users, bookings, bids, cars }) {
 
 function getTop3BiddersText(bids) {
     const counts = {};
-    bids.forEach(b => counts[b.username] = (counts[b.username] || 0) + 1);
+    bids.forEach(b => counts[b.user.username] = (counts[b.user.username] || 0) + 1);
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
     return sorted.map(c => `${c[0]} (${c[1]})`).join(", ");
 }
@@ -50,11 +50,12 @@ function getTop3BiddersText(bids) {
 function generateCharts({ bookings, bids, cars, categories, users, days }) {
     createChart("averageRevenuePerUserChart", "bar", getAverageRevenuePerUser(bookings, bids, users), "Average Revenue Per User");
     createChart("carsPerCategoryChart", "bar", getCarsPerCategory(cars, categories), "Cars Per Category");
+    createChart("revenueTrendsChart", "line", getRevenueTrends(bookings, days), "Revenue Trends Over Time");
     createChart("highestRatedCarCategoryWiseChart", "bar", getHighestRatedCarCategoryWise(cars, categories), "Highest Rated Car Category Wise");
     createChart("bidsPerCategoryChart", "bar", getBidsPerCategory(bids, categories), "Bids Per Category");
     createChart("totalBiddedPricePerCategoryChart", "bar", getTotalBiddedPricePerCategory(bids, categories), "Total Bidded Price Per Category");
     createChart("carsPerCityChart", "pie", getCarsPerCity(cars), "Cars Per City");
-    createChart("top3BiddersChart", "bar", getTop3Bidders(bids), "Top 3 Bidders");
+    // createChart("top3BiddersChart", "bar", getTop3Bidders(bids), "Top 3 Bidders");
     createChart("totalRevenuePerCategoryChart", "bar", getTotalRevenuePerCategory(bookings, bids, categories), "Total Revenue Per Category");
     createChart("totalRevenuePerCityChart", "bar", getTotalRevenuePerCity(bookings, bids, cars), "Total Revenue Per City");
     createChart("bookingsOverTimeChart", "line", getBookingsOverTime(bookings, days), "Bookings Over Time");
@@ -118,7 +119,7 @@ function createChart(id, type, data, title) {
 function getCarsPerCategory(cars, categories) {
     const counts = categories.map(category => ({
         categoryName: category.categoryName,
-        count: cars.filter(car => car.categoryId === category.categoryId).length
+        count: cars.filter(car => car.category.categoryId === category.categoryId).length
     }));
     return { labels: counts.map(c => c.categoryName), datasets: [{ label: "Cars", data: counts.map(c => c.count), backgroundColor: "blue" }] };
 }
@@ -126,7 +127,7 @@ function getCarsPerCategory(cars, categories) {
 function getHighestRatedCarCategoryWise(cars, categories) {
     const ratings = categories.map(category => ({
         categoryName: category.categoryName,
-        rating: Math.max(...cars.filter(car => car.categoryId === category.categoryId).map(car => car.rating || 0))
+        rating: Math.max(...cars.filter(car => car.category.categoryId === category.categoryId).map(car => car.avgRating || 0))
     }));
     return { labels: ratings.map(r => r.categoryName), datasets: [{ label: "Rating", data: ratings.map(r => r.rating), backgroundColor: "green" }] };
 }
@@ -134,17 +135,64 @@ function getHighestRatedCarCategoryWise(cars, categories) {
 function getBidsPerCategory(bids, categories) {
     const counts = categories.map(category => ({
         categoryName: category.categoryName,
-        count: bids.filter(bid => bid.categoryId === category.categoryId).length
+        count: bids.filter(bid => bid.car.category.categoryId === category.categoryId).length
     }));
     return { labels: counts.map(c => c.categoryName), datasets: [{ label: "Bids", data: counts.map(c => c.count), backgroundColor: "orange" }] };
+}
+
+function getRevenueTrends(bookings, days) {
+    const localRevenue = {};
+    const outstationRevenue = {};
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const aggregateBy = days > 365 ? 'year' : days > 30 ? 'month' : 'week';
+
+    for (let i = 0; i <= days; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        const dateString = aggregateBy === 'year' ? date.getFullYear().toString() :
+                           aggregateBy === 'month' ? `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}` :
+                           `${date.getFullYear()}-W${getWeekNumber(date)}`;
+        if (!localRevenue[dateString]) {
+            localRevenue[dateString] = 0;
+            outstationRevenue[dateString] = 0;
+        }
+    }
+
+    bookings.forEach(booking => {
+        const bookingDate = new Date(booking.createdAt);
+        const dateString = aggregateBy === 'year' ? bookingDate.getFullYear().toString() :
+                           aggregateBy === 'month' ? `${bookingDate.getFullYear()}-${(bookingDate.getMonth() + 1).toString().padStart(2, '0')}` :
+                           `${bookingDate.getFullYear()}-W${getWeekNumber(bookingDate)}`;
+        if (booking.rentalType === "local" && localRevenue[dateString] !== undefined) {
+            localRevenue[dateString] += booking.totalFare;
+        } else if (booking.rentalType === "outstation" && outstationRevenue[dateString] !== undefined) {
+            outstationRevenue[dateString] += booking.totalFare;
+        }
+    });
+
+    return {
+        labels: Object.keys(localRevenue),
+        datasets: [
+            { label: "Local Revenue (₹)", data: Object.values(localRevenue), backgroundColor: "cyan", borderColor: "cyan", fill: false },
+            { label: "Outstation Revenue (₹)", data: Object.values(outstationRevenue), backgroundColor: "blue", borderColor: "blue", fill: false }
+        ]
+    };
+}
+
+function getWeekNumber(date) {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
 }
 
 function getTotalBiddedPricePerCategory(bids, categories) {
     const prices = categories.map(category => ({
         categoryName: category.categoryName,
-        total: bids.filter(bid => bid.categoryId === category.categoryId).reduce((sum, bid) => sum + bid.bidAmount, 0)
+        total: bids.filter(bid => bid.car.category.categoryId === category.categoryId).reduce((sum, bid) => sum + bid.bidAmount, 0)
     }));
-    return { labels: prices.map(p => p.categoryName), datasets: [{ label: "Total Bidded Price ($)", data: prices.map(p => p.total), backgroundColor: "purple" }] };
+    return { labels: prices.map(p => p.categoryName), datasets: [{ label: "Total Bidded Price (₹)", data: prices.map(p => p.total), backgroundColor: "purple" }] };
 }
 
 function getCarsPerCity(cars) {
@@ -155,7 +203,7 @@ function getCarsPerCity(cars) {
 
 function getTop3Bidders(bids) {
     const counts = {};
-    bids.forEach(b => counts[b.username] = (counts[b.username] || 0) + 1);
+    bids.forEach(b => counts[b.user.username] = (counts[b.user.username] || 0) + 1);
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
     return { labels: sorted.map(c => c[0]), datasets: [{ label: "Bids", data: sorted.map(c => c[1]), backgroundColor: "red" }] };
 }
@@ -163,42 +211,55 @@ function getTop3Bidders(bids) {
 function getLeastBiddedCategory(bids, categories) {
     const counts = categories.map(category => ({
         categoryName: category.categoryName,
-        count: bids.filter(bid => bid.categoryId === category.categoryId).length
+        count: bids.filter(bid => bid.car.category.categoryId === category.categoryId).length
     }));
     const sorted = counts.sort((a, b) => a.count - b.count).slice(0, 3);
-    return { labels: sorted.map(c => c.categoryName), datasets: [{ label: "Bids", data: sorted.map(c => c.count), backgroundColor: "brown" }] };
+    return { labels: sorted.map(c => c.categoryName), datasets: [{ label: "Bids", data: sorted.map(c.count), backgroundColor: "brown" }] };
 }
 
 function getLeastBookedCategory(bookings, categories) {
     const counts = categories.map(category => ({
         categoryName: category.categoryName,
-        count: bookings.filter(booking => booking.categoryId === category.categoryId).length
+        count: bookings.filter(booking => booking.bid.car.category.categoryId === category.categoryId).length
     }));
     const sorted = counts.sort((a, b) => a.count - b.count).slice(0, 3);
-    return { labels: sorted.map(c => c.categoryName), datasets: [{ label: "Bookings", data: sorted.map(c => c.count), backgroundColor: "pink" }] };
+    return { labels: sorted.map(c => c.categoryName), datasets: [{ label: "Bookings", data: sorted.map(c.count), backgroundColor: "pink" }] };
 }
 
 function getTotalRevenuePerCategory(bookings, bids, categories) {
     const revenue = categories.map(category => ({
         categoryName: category.categoryName,
-        total: bookings.filter(booking => booking.categoryId === category.categoryId).reduce((sum, booking) => sum + booking.bidPrice, 0) +
-               bids.filter(bid => bid.categoryId === category.categoryId).reduce((sum, bid) => sum + bid.bidAmount, 0)
+        localTotal: bookings.filter(booking => booking.bid.car.category.categoryId === category.categoryId && booking.rentalType === "local").reduce((sum, booking) => sum + booking.totalFare, 0),
+        outstationTotal: bookings.filter(booking => booking.bid.car.category.categoryId === category.categoryId && booking.rentalType === "outstation").reduce((sum, booking) => sum + booking.totalFare, 0)
     }));
-    return { labels: revenue.map(r => r.categoryName), datasets: [{ label: "Total Revenue ($)", data: revenue.map(r => r.total), backgroundColor: "cyan" }] };
+    return {
+        labels: revenue.map(r => r.categoryName),
+        datasets: [
+            { label: "Local Revenue (₹)", data: revenue.map(r => r.localTotal), backgroundColor: "cyan" },
+            { label: "Outstation Revenue (₹)", data: revenue.map(r => r.outstationTotal), backgroundColor: "blue" }
+        ]
+    };
 }
 
 function getTotalRevenuePerCity(bookings, bids, cars) {
     const revenue = {};
     cars.forEach(car => {
-        const carRevenue = bookings.filter(booking => booking.carId === car.carId).reduce((sum, booking) => sum + booking.bidPrice, 0) +
-                           bids.filter(bid => bid.carId === car.carId).reduce((sum, bid) => sum + bid.bidAmount, 0);
+        const localRevenue = bookings.filter(booking => booking.bid.car.carId === car.carId && booking.rentalType === "local").reduce((sum, booking) => sum + booking.totalFare, 0);
+        const outstationRevenue = bookings.filter(booking => booking.bid.car.carId === car.carId && booking.rentalType === "outstation").reduce((sum, booking) => sum + booking.totalFare, 0);
         if (revenue[car.city]) {
-            revenue[car.city] += carRevenue;
+            revenue[car.city].local += localRevenue;
+            revenue[car.city].outstation += outstationRevenue;
         } else {
-            revenue[car.city] = carRevenue;
+            revenue[car.city] = { local: localRevenue, outstation: outstationRevenue };
         }
     });
-    return { labels: Object.keys(revenue), datasets: [{ label: "Total Revenue ($)", data: Object.values(revenue), backgroundColor: "magenta" }] };
+    return {
+        labels: Object.keys(revenue),
+        datasets: [
+            { label: "Local Revenue (₹)", data: Object.values(revenue).map(r => r.local), backgroundColor: "cyan" },
+            { label: "Outstation Revenue (₹)", data: Object.values(revenue).map(r => r.outstation), backgroundColor: "blue" }
+        ]
+    };
 }
 
 function getBookingsOverTime(bookings, days) {
@@ -206,17 +267,26 @@ function getBookingsOverTime(bookings, days) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
+    const aggregateBy = days > 365 ? 'year' : days > 30 ? 'month' : 'week';
+
     for (let i = 0; i <= days; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
-        const dateString = date.toISOString().split('T')[0];
-        counts[dateString] = 0;
+        const dateString = aggregateBy === 'year' ? date.getFullYear().toString() :
+                           aggregateBy === 'month' ? `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}` :
+                           `${date.getFullYear()}-W${getWeekNumber(date)}`;
+        if (!counts[dateString]) {
+            counts[dateString] = 0;
+        }
     }
 
     bookings.forEach(booking => {
-        const bookingDate = new Date(booking.createdAt).toISOString().split('T')[0];
-        if (counts[bookingDate] !== undefined) {
-            counts[bookingDate]++;
+        const bookingDate = new Date(booking.createdAt);
+        const dateString = aggregateBy === 'year' ? bookingDate.getFullYear().toString() :
+                           aggregateBy === 'month' ? `${bookingDate.getFullYear()}-${(bookingDate.getMonth() + 1).toString().padStart(2, '0')}` :
+                           `${bookingDate.getFullYear()}-W${getWeekNumber(bookingDate)}`;
+        if (counts[dateString] !== undefined) {
+            counts[dateString]++;
         }
     });
 
@@ -225,12 +295,12 @@ function getBookingsOverTime(bookings, days) {
 
 function getAverageRevenuePerUser(bookings, bids, users) {
     const revenue = {};
-    bookings.forEach(b => revenue[b.userId] = (revenue[b.userId] || 0) + b.bidPrice);
-    bids.forEach(b => revenue[b.userId] = (revenue[b.userId] || 0) + b.bidAmount);
+    bookings.forEach(b => revenue[b.bid.user.userId] = (revenue[b.bid.user.userId] || 0) + b.totalFare);
+    bids.forEach(b => revenue[b.user.userId] = (revenue[b.user.userId] || 0) + b.bidAmount);
     const userIds = Object.keys(revenue);
     const avgRevenue = userIds.map(userId => revenue[userId]);
     const userNames = userIds.map(userId => users.find(user => user.userId === userId).username);
-    return { labels: userNames, datasets: [{ label: "Avg. Revenue ($)", data: avgRevenue, backgroundColor: "green" }] };
+    return { labels: userNames, datasets: [{ label: "Avg. Revenue (₹)", data: avgRevenue, backgroundColor: "green" }] };
 }
 
 function logout() {

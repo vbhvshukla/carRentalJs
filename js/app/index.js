@@ -100,9 +100,8 @@ function createCarCard(car) {
                 </svg>
                 <span class="user-name">${car.owner.username}</span>
             </div>
-            <div class="car-price-city">
+            <div class="car-price-city">Starts from 
                 <span class="price">₹${car.rentalOptions.local.pricePerHour}/hour (Local)</span>
-                <span class="price">₹${car.rentalOptions.outstation.pricePerDay}/day (Outstation)</span>
                 <span class="city">${car.city}</span>
             </div>
             <button class="book-now-btn">Book Now</button>
