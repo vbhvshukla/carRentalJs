@@ -25,7 +25,7 @@ function logout() {
         const [name] = cookies[i].split("=");
         setCookie(name, "", -1); 
     }
-    window.location.href = "./index.html";
+    window.location.href = "../index.html";
 }
 
 async function checkAdmin() {

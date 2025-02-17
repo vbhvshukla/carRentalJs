@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard :: All Messages</title>
+    <link rel="stylesheet" href="view-umessages.css">
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <a href="../../index.html"> <img src="../../../assets/images/logo.png" alt="Logo"></a>
+            </div>
+            <nav class="nav-links">
+                <a href="../../index.html">Home</a>
+                <a href="../../owner-dashboard/odashboard.html" id="owner-dashboard-link">Owner Dashboard</a>
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <h3>User Dashboard</h3>
+                <ul>
+                    <li><a href="../udashboard.html">🏠 My Profile</a></li>
+                    <li><a href="../user-bookings/view-ubooking.html">📅 My Bookings</a></li>
+                    <li><a href="../messages/view-umessages.html">✉️ My Messages</a></li>
+                    <li><a href="../mybiddings/mybiddings.html">💰 My Biddings</a></li>
+                </ul>
+            </div>
+            <div class="content">
+                <h2>All Conversations</h2>
+                <div id="message-list" class="message-list">
+                    <p class="no-messages">Loading conversations...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            &copy; 2025 Car Rental. All rights reserved.
+        </div>
+    </div>
+
+    <script type="module" src="view-umessages.js">
+           </script>
+</body>
+
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard :: Message</title>
+    <link rel="stylesheet" href="view-omessage.css">
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <img src="../../../assets/images/logo.png" alt="Logo">
+            </div>
+            <nav class="nav-links">
+                <a href="../../index.html">Home</a>
+                <a href="../odashboard.html" id="owner-dashboard-link">Owner Dashboard</a>
+                <a href="../../user-dashboard/udashboard.html" id="user-dashboard-link">User Dashboard</a>
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <h2>Conversation</h2>
+            <a href="./view-omessages.html">Go back</a>
+            <div id="chat-messages" class="chat-messages"></div>
+
+            <div class="chat-input">
+                <input type="text" id="chat-message-input" placeholder="Type a message">
+                <label for="chat-file-input" class="chat-file-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path
+                            d="M16 9V7a4 4 0 0 0-8 0v10a2 2 0 0 0 4 0V7a1 1 0 1 1 2 0v10a4 4 0 0 1-8 0V7a6 6 0 1 1 12 0v2h-2z" />
+                    </svg>
+                </label>
+                <input type="file" id="chat-file-input" class="chat-file-input"
+                    accept="image/*,video/*,application/pdf">
+                <!-- <label for="chat-file-input" class="button">Add Attachment</label> -->
+                <button id="send-chat-message-btn" class="send-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            &copy; 2025 Car Rental. All rights reserved.
+        </div>
+    </div>
+
+
+
+    <script type="module" src="view-omessage.js">
+        
+    </script>
+</body>
+
+</html>

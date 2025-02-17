@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard</title>
+    <link rel="stylesheet" href="odashboard.css">
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <img src="../../../assets/images/logo.png" alt="Logo">
+            </div>
+            <nav class="nav-links">
+                <a href="../index.html">Home</a>
+                <a href="../user-dashboard/udashboard.html" id="user-dashboard-link">User Dashboard</a>
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <h3>Owner Dashboard</h3>
+                <ul>
+                    <li><a href="../owner-dashboard/odashboard.html">🏠 Dashboard</a></li>
+                    <li><a href="../owner-dashboard/cars/view/view-cars.html">🚗 My Cars</a></li>
+                    <li><a href="./analytics/oanalytics.html">📊 Analytics</a></li>
+                    <li><a href="./messages/view-omessages.html">📨 All Messages</a></li>
+                    <li><a href="./cars/add-car/add-car.html">➕ Add New Car</a></li>
+                </ul>
+            </div>
+
+            <div class="content">
+                <div class="container">
+                    <h2>Pending Bids</h2>
+                    <select id="rental-type-sort-pending">
+                        <option value="all">All</option>
+                        <option value="local">Local</option>
+                        <option value="outstation">Outstation</option>
+                    </select>
+                    <table id="pending-bids-table">
+                        <thead>
+                            <tr>
+                                <th>Car Name</th>
+                                <th>Bid Amount</th>
+                                <th>Total Amount</th>
+                                <th>User</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Rental Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="pending-pagination">
+                        <button id="prev-pending">Previous</button>
+                        <span id="pending-page-info"></span>
+                        <button id="next-pending">Next</button>
+                    </div>
+                    <p id="no-pending-bids" class="hidden">No pending bids.</p>
+
+                    <h2>Active Bookings</h2>
+                    <select id="rental-type-sort-bookings">
+                        <option value="all">All</option>
+                        <option value="local">Local</option>
+                        <option value="outstation">Outstation</option>
+                    </select>
+                    <table id="bookings-table">
+                        <thead>
+                            <tr>
+                                <th>Car Name</th>
+                                <th>Bid Price</th>
+                                <th>Total Amount</th>
+                                <th>User</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Created At</th>
+                                <th>Rental Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="bookings-pagination">
+                        <button id="prev-bookings">Previous</button>
+                        <span id="bookings-page-info"></span>
+                        <button id="next-bookings">Next</button>
+                    </div>
+                    <p id="no-bookings" class="hidden">No active bookings.</p>
+
+                    <h2>All Bids</h2>
+                    <select id="status-sort">
+                        <option value="all">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="accepted">Accepted</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <table id="all-bids-table">
+                        <thead>
+                            <tr>
+                                <th>Car Name</th>
+                                <th>Bid Amount</th>
+                                <th>Total Amount</th>
+                                <th>User</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Rental Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="pagination" id="all-bids-pagination">
+                        <button id="prev-all-bids">Previous</button>
+                        <span id="all-bids-page-info"></span>
+                        <button id="next-all-bids">Next</button>
+                    </div>
+                    <p id="no-all-bids" class="hidden">No bids found.</p>
+
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            &copy; 2025 Car Rental. All rights reserved.
+        </div>
+    </div>
+
+    <!-- Modal for adding extra charges -->
+    <div id="extra-charges-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Extra Charges</h2>
+            <form id="extra-charges-form">
+                <div id="extraKmField">
+                    <label for="extraKm">Extra Km:</label>
+                    <input type="number" id="extraKm" name="extraKm" step="1" min="0">
+                </div>
+                <div id="extraHoursField">
+                    <label for="extraHours">Extra Hours:</label>
+                    <input type="number" id="extraHours" name="extraHours" step="1" min="0">
+                </div>
+                <div id="extraDaysField" class="hidden">
+                    <label for="extraDays">Extra Days:</label>
+                    <input type="number" id="extraDays" name="extraDays" step="1" min="0">
+                </div>
+                <button type="submit">Update Total Amount</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="odashboard.js"></script>
+</body>
+
+</html>

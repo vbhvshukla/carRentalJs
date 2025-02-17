@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard :: All Messages</title>
+    <link rel="stylesheet" href="view-omessages.css">
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <a href="../../index.html"> <img src="../../../assets/images/logo.png" alt="Logo"></a>
+            </div>
+            <nav class="nav-links">
+                <a href="../../index.html">Home</a>
+                <a href="../../user-dashboard/udashboard.html" id="user-dashboard-link">User Dashboard</a>
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <h3>Owner Dashboard</h3>
+                <ul>
+                    <li><a href="../odashboard.html">🏠 Dashboard</a></li>
+                    <li><a href="../cars/view/view-cars.html">🚗 My Cars</a></li>
+                    <li><a href="../analytics/oanalytics.html">📊 Analytics</a></li>
+                    <li><a href="../messages/view-omessages.html">📨 All Message</a></li>
+                    <li><a href="../cars/add-car/add-car.html">➕ Add New Car</a></li>
+                </ul>
+            </div>
+            <div class="content">
+                <h2>All Conversations</h2>
+                <div id="message-list" class="message-list">
+                    <p id="no-conversations" class="hidden no-messages">No conversations</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            &copy; 2025 Car Rental. All rights reserved.
+        </div>
+    </div>
+
+    <script type="module" src="view-omessages.js">
+               
+    </script>
+</body>
+
+</html>

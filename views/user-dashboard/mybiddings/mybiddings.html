@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard :: My Biddings</title>
+    <link rel="stylesheet" href="mybiddings.css">
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="header">
+            <div class="logo">
+                <a href="../../index.html"> <img src="../../../assets/images/logo.png" alt="Logo"></a>
+            </div>
+
+            <nav class="nav-links">
+                <a href="../../index.html">Home</a>
+                <a href="../../owner-dashboard/odashboard.html" id="owner-dashboard-link">Owner Dashboard</a>
+                <a href="#" id="logout-link">Logout</a>
+            </nav>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <h3>User Dashboard</h3>
+                <ul>
+                    <li><a href="../../user-dashboard/udashboard.html">🏠 My Profile</a></li>
+                    <li><a href="../user-bookings/view-ubooking.html">📅 My Bookings</a></li>
+                    <li><a href="../messages/view-umessages.html">✉️ My Messages</a></li>
+                    <li><a href="../mybiddings/mybiddings.html">💰 My Biddings</a></li>
+                </ul>
+            </div>
+            <div class="content">
+                <table id="bidding-table">
+                    <thead>
+                        <tr>
+                            <th>Car</th>
+                            <th>Car Owner</th>
+                            <th>Bid Amount</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Placed At</th>
+                            <th>Total Amount</th>
+                            <th>Rental Type
+                                <select id="rental-type-sort" onchange="filterByRentalType()">
+                                    <option value="">All</option>
+                                    <option value="local">Local</option>
+                                    <option value="outstation">Outstation</option>
+                                </select>
+                            </th>
+                            <th>
+                                Status
+                                <select id="status-sort" onchange="filterByStatus()">
+                                    <option value="">All</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="accepted">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="no-biddings-row" class="hidden">
+                            <td colspan="10" class="no-biddings">No biddings exist.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="toast-container"></div>
+
+        <div class="footer">
+            &copy; 2025 Car Rental. All rights reserved.
+        </div>
+    </div>
+
+    <script type="module" src="mybiddings.js"></script>
+</body>
+
+</html>
