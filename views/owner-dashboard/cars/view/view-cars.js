@@ -1,10 +1,11 @@
-import { getAllItemsByIndex, updateItem, getAllItems, getItemByKey } from "../../../../js/utils/dbUtils.js";
-import { checkAuth, logout } from "../../../../js/utils/auth.js";
-import { getCookie } from "../../../../js/utils/cookie.js";
+import { getAllItemsByIndex, updateItem, getAllItems, getItemByKey, updateCarInAllStores } from "../../../../js/utils/dbUtils.js";
+import { checkAuth } from "../../../../js/utils/auth.js";
+import { getCookie ,setCookie} from "../../../../js/utils/cookie.js";
 import { readFileAsDataURL } from "../../../../js/utils/readFile.js";
 import { validateForm } from "../../../../js/utils/validation.js";
 
 const userId = getCookie("userId");
+if(!userId){window.location.href="../../../index.html"}
 const user = await getItemByKey("users", userId);
 
 if (!user || user.role !== "owner" || !user.isApproved) {
@@ -26,6 +27,14 @@ async function updateNavLinks() {
     }
 }
 
+function logout() {
+    const cookies = document.cookie.split("; ");
+    for (let i = 0; i < cookies.length; i++) {
+        const [name] = cookies[i].split("=");
+        setCookie(name, "", -1); 
+    }
+    window.location.href = "../../../index.html";
+}
 async function renderOwnerCars() {
     const ownerId = getCookie("userId");
     const cars = await getAllItemsByIndex("cars", "ownerId", ownerId);
@@ -289,7 +298,7 @@ function editCar(car) {
         event.preventDefault();
 
         const formData = new FormData(event.target);
-        const formObject = {
+const formObject = {
             carName: formData.get("carName").trim(),
             categoryId: formData.get("category").trim(),
             city: formData.get("city").trim(),
@@ -340,14 +349,62 @@ function editCar(car) {
             return;
         }
 
+        // const formObject = {
+        //     carName: formData.get("carName").trim(),
+        //     categoryId: formData.get("category").trim(),
+        //     city: formData.get("city").trim(),
+        //     description: formData.get("description").trim(),
+        //     carType: formData.get("car-type").trim().toLowerCase(),
+        //     features: Array.from(document.querySelectorAll("#features-list li")).map(li => li.firstChild.textContent),
+        //     isAvailableForLocal: formData.get("available-local") === "on",
+        //     isAvailableForOutstation: formData.get("available-outstation") === "on",
+        //     localPrice: parseFloat(formData.get("local-price")) || 0,
+        //     maxKmPerHour: parseFloat(formData.get("max-km-per-hour")) || 0,
+        //     extraHourRate: parseFloat(formData.get("extra-hour-rate")) || 0,
+        //     extraKmRate: parseFloat(formData.get("extra-km-rate")) || 0,
+        //     outstationPrice: parseFloat(formData.get("outstation-price")) || 0,
+        //     pricePerKm: parseFloat(formData.get("price-per-km")) || 0,
+        //     minimumKmChargeable: parseFloat(formData.get("minimum-km-chargeable")) || 0,
+        //     maxKmLimitPerDay: parseFloat(formData.get("minimum-km-chargeable")) + 100 || 0,
+        //     extraDayRate: parseFloat(formData.get("extra-day-rate")) || 0,
+        //     extraHourlyRate: parseFloat(formData.get("extra-hourly-rate")) || 0,
+        //     extraKmRateOutstation: parseFloat(formData.get("extra-km-rate-outstation")) || 0
+        // };
+
+        // const errors = validateForm(formObject, {
+        //     carName: { required: true, carName: true },
+        //     categoryId: { required: true },
+        //     city: { required: true, citySelect: true },
+        //     description: { required: true, maxLength: 500 },
+        //     carType: { required: true, carType: true },
+        //     localPrice: { number: true },
+        //     maxKmPerHour: { number: true },
+        //     extraHourRate: { number: true },
+        //     extraKmRate: { number: true },
+        //     outstationPrice: { number: true },
+        //     pricePerKm: { number: true },
+        //     minimumKmChargeable: { number: true },
+        //     maxKmLimitPerDay: { number: true },
+        //     extraDayRate: { number: true },
+        //     extraHourlyRate: { number: true },
+        //     extraKmRateOutstation: { number: true }
+        // });
+
+        if (Object.keys(errors).length > 0) {
+            Object.keys(errors).forEach(field => {
+                const errorElement = document.getElementById(`${field}-error`);
+                errorElement.textContent = errors[field];
+                errorElement.style.display = "block";
+            });
+            alert("Please fill in all required fields correctly.");
+            return;
+        }
+
         const updatedCar = {
             ...car,
             carName: formData.get("carName").trim(),
-            availability: formData.get("availability").trim().toLowerCase(),
-            carType: formData.get("car-type").trim(),
-            categoryId: formData.get("category").trim(),
-            categoryName: document.getElementById("category").selectedOptions[0].textContent,
-            city: formData.get("city").trim(),
+                        carType: formData.get("car-type").trim(),
+                        city: formData.get("city").trim(),
             description: formData.get("description").trim(),
             featured: Array.from(document.querySelectorAll("#features-list li")).map(li => li.firstChild.textContent),
             rentalOptions: {
@@ -369,13 +426,19 @@ function editCar(car) {
             }
         };
 
-        const newImages = document.getElementById("new-images").files;
+                const newImages = document.getElementById("new-images").files;
         if (newImages.length > 0) {
             const newImageBase64 = await Promise.all(Array.from(newImages).map(file => readFileAsDataURL(file)));
             updatedCar.images.push(...newImageBase64);
         }
 
+        // Remove extra fields that are not part of the schema
+        delete updatedCar.availability;
+        delete updatedCar.categoryId;
+        delete updatedCar.categoryName;
+
         await updateItem("cars", updatedCar);
+        await updateCarInAllStores(updatedCar);
         alert("Car details updated successfully!");
         renderOwnerCars();
     });

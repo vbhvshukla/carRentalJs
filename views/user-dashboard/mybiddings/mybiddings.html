@@ -33,42 +33,45 @@
                 </ul>
             </div>
             <div class="content">
-                <table id="bidding-table">
-                    <thead>
-                        <tr>
-                            <th>Car</th>
-                            <th>Car Owner</th>
-                            <th>Bid Amount</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                            <th>Placed At</th>
-                            <th>Total Amount</th>
-                            <th>Rental Type
-                                <select id="rental-type-sort" onchange="filterByRentalType()">
-                                    <option value="">All</option>
-                                    <option value="local">Local</option>
-                                    <option value="outstation">Outstation</option>
-                                </select>
-                            </th>
-                            <th>
-                                Status
-                                <select id="status-sort" onchange="filterByStatus()">
-                                    <option value="">All</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="accepted">Approved</option>
-                                    <option value="rejected">Rejected</option>
-                                    <option value="cancelled">Cancelled</option>
-                                </select>
-                            </th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr id="no-biddings-row" class="hidden">
-                            <td colspan="10" class="no-biddings">No biddings exist.</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-container">
+                    <table id="bidding-table">
+                        <thead>
+                            <tr>
+                                <th>Car</th>
+                                <th>Car Owner</th>
+                                <th>Bid Amount</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Placed At</th>
+                                <th>Total Amount</th>
+                                <th>Rental Type
+                                    <select id="rental-type-sort" onchange="filterByRentalType()">
+                                        <option value="">All</option>
+                                        <option value="local">Local</option>
+                                        <option value="outstation">Outstation</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    Status
+                                    <select id="status-sort" onchange="filterByStatus()">
+                                        <option value="">All</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="accepted">Approved</option>
+                                        <option value="rejected">Rejected</option>
+                                        <option value="cancelled">Cancelled</option>
+                                    </select>
+                                </th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="no-biddings-row" style="display: none;">
+                                <td colspan="10" class="no-biddings">No biddings exist.</td>
+                            </tr>
+                            <!-- Existing rows will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <div id="toast-container"></div>

@@ -1,6 +1,6 @@
 import { getAllItemsByIndex, getItemByKey, updateItem } from "../../../js/utils/dbUtils.js";
-import { getCookie } from "../../../js/utils/cookie.js";
-import { checkAuth, logout } from "../../../js/utils/auth.js";
+import { getCookie,setCookie } from "../../../js/utils/cookie.js";
+import { checkAuth } from "../../../js/utils/auth.js";
 import { showToast } from "../../../js/utils/toastUtils.js";
 
 const userId = getCookie("userId");
@@ -11,6 +11,7 @@ let biddings = [];
 async function loadBiddingHistory() {
     try {
         biddings = await getAllItemsByIndex("bids", "userId", userId);
+        // console.log(biddings);
         renderBiddings(biddings);
     } catch (error) {
         console.error("Error loading bidding history:", error);
@@ -32,16 +33,20 @@ function highlightActiveLink() {
 
 function renderBiddings(biddings) {
     const tableBody = document.querySelector("#bidding-table tbody");
+    const noBiddingsRow = document.getElementById("no-biddings-row");
     tableBody.innerHTML = "";
+    console.log(biddings.length);
     if (biddings.length === 0) {
-        // document.getElementById("no-biddings-row").classList.remove("hidden");
+        console.log("getting in here");
+        console.log(noBiddingsRow);
+        noBiddingsRow.style.display = "table-row";
     } else {
-        // document.getElementById("no-biddings-row").classList.add("hidden");
+        noBiddingsRow.style.display = "none";
         biddings.forEach(bid => {
             const chatId = `${userId}_${bid.car.owner.userId}_${bid.car.carId}`;
             const statusClass = bid.status.toLowerCase();
             const statusLabel = {
-                "accepeted": "✔ Approved",
+                "accepted": "✔ Approved",
                 "pending": "⏳ Pending",
                 "rejected": "❌ Rejected",
                 "cancelled": "❌ Cancelled"
@@ -65,7 +70,7 @@ function renderBiddings(biddings) {
                 <td>₹${totalAmount}</td>
                 <td>${rentalTypeLabel}</td>
                 <td class="status-${statusClass}">${statusLabel}</td>
-                <td>
+                <td class="action-buttons">
                     <button class="chat-button" onclick="redirectToChat('${chatId}')">Chat</button>
                     ${bid.status.toLowerCase() === "cancelled" ? "" : `<button class="cancel-button" onclick="cancelBid('${bid.bidId}')">Cancel</button>`}
                 </td>
@@ -118,11 +123,11 @@ function redirectToChat(chatId) {
 async function updateNavLinks() {
     const isAuthenticated = await checkAuth();
     const logoutLink = document.getElementById('logout-link');
-    const userDashboard = document.getElementById('user-dashboard-link');
+    // const userDashboard = document.getElementById('user-dashboard-link');
     const ownerDashboard = document.getElementById('owner-dashboard-link');
 
     if (isAuthenticated) {
-        userDashboard.style.display = 'block';
+        // userDashboard.style.display = 'block';
         logoutLink.style.display = 'block';
         const userId = getCookie("userId");
         const user = await getItemByKey("users", userId);
@@ -140,6 +145,14 @@ async function updateNavLinks() {
     }
 }
 
+function logout() {
+    const cookies = document.cookie.split("; ");
+    for (let i = 0; i < cookies.length; i++) {
+        const [name] = cookies[i].split("=");
+        setCookie(name, "", -1); 
+    }
+    window.location.href = "../../index.html";
+}
 document.addEventListener("DOMContentLoaded", () => {
     loadBiddingHistory();
     updateNavLinks();

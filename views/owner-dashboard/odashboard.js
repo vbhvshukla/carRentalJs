@@ -188,6 +188,8 @@ async function fetchData() {
     bookings = await getAllItems("bookings");
     bookings = bookings.filter(booking => booking.bid.car.owner.userId === userId);
     allBids = await getAllItems("bids");
+    allBids = allBids.filter(bid => bid.car.owner.userId === userId); // Filter bids by owner userId
+
     renderPendingBids();
     renderBookings();
     renderAllBids();

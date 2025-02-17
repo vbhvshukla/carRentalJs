@@ -49,6 +49,7 @@ export const dbSchema = {
         "pricePerDay": "number", //price per day
         "pricePerKm": "number", //per km charge for outstations
         "minimumKmChargeable": "number", //minimum chargeable even if user drives 10 km after booking for 24 hours
+        "maxKmLimitPerDay":"number",
         "extraDayRate": "number", //if extra hours is 8+ hours this rate would be applicable 
         "extraHourlyRate": "number", //if extra hours is less than 8 hours
         "extraKmRate": "number" //flat km rate applicable no matter the case 

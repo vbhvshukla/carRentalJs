@@ -247,4 +247,61 @@ async function getAllItemsByTimeRange(storeName, indexName, days) {
     });
 }
 
-export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem, getItemByKey, getAllItemsByIndex, getItemsWithPagination, getTotalItems, getItemsByTimeRange, getAllItemsByTimeRange };
+async function updateCarInAllStores(updatedCar) {
+    const db = await openDb();
+    const transaction = db.transaction(["cars", "bookings", "bids"], "readwrite");
+
+    // Update car in cars store
+    const carsStore = transaction.objectStore("cars");
+    carsStore.put(updatedCar);
+
+    // Update car in bookings store
+    const bookingsStore = transaction.objectStore("bookings");
+    const bookingsRequest = bookingsStore.openCursor();
+
+    bookingsRequest.onsuccess = function (event) {
+        const cursor = event.target.result;
+        if (cursor) {
+            const booking = cursor.value;
+            if (booking.bid && booking.bid.car && booking.bid.car.carId === updatedCar.carId) {
+                booking.bid.car = updatedCar;
+                if (validateSchema(dbSchema.bookings, booking)) {
+                    cursor.update(booking);
+                } else {
+                    console.error("Invalid schema for booking:", booking);
+                }
+            }
+            cursor.continue();
+        }
+    };
+
+    // Update car in bids store
+    const bidsStore = transaction.objectStore("bids");
+    const bidsRequest = bidsStore.openCursor();
+
+    bidsRequest.onsuccess = function (event) {
+        const cursor = event.target.result;
+        if (cursor) {
+            const bid = cursor.value;
+            if (bid.car && bid.car.carId === updatedCar.carId) {
+                bid.car = updatedCar;
+                if (validateSchema(dbSchema.bids, bid)) {
+                    cursor.update(bid);
+                } else {
+                    console.error("Invalid schema for bid:", bid);
+                }
+            }
+            cursor.continue();
+        }
+    };
+
+    transaction.oncomplete = function () {
+        console.log("All updates completed successfully.");
+    };
+
+    transaction.onerror = function () {
+        console.error("Transaction failed: ", transaction.error);
+    };
+}
+
+export { addItem, getItemByIndex, getAllItems, updateItem, deleteItem, getItemByKey, getAllItemsByIndex, getItemsWithPagination, getTotalItems, getItemsByTimeRange, getAllItemsByTimeRange, updateCarInAllStores };

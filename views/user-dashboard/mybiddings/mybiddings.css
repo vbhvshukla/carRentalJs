@@ -46,6 +46,39 @@ body {
     transition: color 0.3s, transform 0.2s;
 }
 
+.table-container {
+    overflow-x: auto;
+    max-width: 100%;
+}
+.table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+#bidding-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#bidding-table th, #bidding-table td {
+    padding: 8px;
+    text-align: center; /* Center align text and content */
+    border: 1px solid #ddd;
+}
+
 .nav-links a:hover {
     color: #3498db;
     transform: scale(1.05);
@@ -240,4 +273,38 @@ tbody tr:hover {
     to {
         opacity: 1;
     }
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-buttons button {
+    padding: 5px 10px;
+    font-size: 13px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.chat-button {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+}
+
+.chat-button:hover {
+    background: linear-gradient(135deg, #2a5298, #1e3c72);
+}
+
+.cancel-button {
+    background: linear-gradient(135deg, #d9534f, #c9302c);
+    color: white;
+}
+
+.cancel-button:hover {
+    background: linear-gradient(135deg, #c9302c, #d9534f);
 }
