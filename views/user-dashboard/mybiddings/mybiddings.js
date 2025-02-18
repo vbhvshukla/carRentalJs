@@ -1,10 +1,19 @@
 import { getAllItemsByIndex, getItemByKey, updateItem } from "../../../js/utils/dbUtils.js";
 import { getCookie,setCookie } from "../../../js/utils/cookie.js";
-import { checkAuth } from "../../../js/utils/auth.js";
+import { checkAuth ,checkOwner} from "../../../js/utils/auth.js";
 import { showToast } from "../../../js/utils/toastUtils.js";
 
 const userId = getCookie("userId");
 if (!userId) window.location.href = "../../login/login.html";
+
+async function checkAndRedirectOwner() {
+    const isOwnerApproved = await checkOwner();
+    if (isOwnerApproved) {
+        window.location.href = "../../owner-dashboard/odashboard.html";
+    }
+}
+
+checkAndRedirectOwner();
 
 let biddings = [];
 

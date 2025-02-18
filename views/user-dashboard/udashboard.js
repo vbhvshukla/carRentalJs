@@ -1,5 +1,5 @@
 import { getAllItemsByIndex, getItemByKey, updateItem } from "../../js/utils/dbUtils.js";
-import { checkAuth, logout } from "../../js/utils/auth.js";
+import { checkAuth, logout,checkOwner } from "../../js/utils/auth.js";
 import { getCookie } from "../../js/utils/cookie.js";
 import { showToast } from "../../js/utils/toastUtils.js";
 
@@ -46,6 +46,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!checkAuth()) {
         window.location.href = "../index.html";
     }
+    async function checkAndRedirectOwner() {
+        const isOwnerApproved = await checkOwner();
+        if (isOwnerApproved) {
+            window.location.href = "../owner-dashboard/odashboard.html";
+        }
+    }
+    
+    checkAndRedirectOwner();
     const userId = getCookie("userId");
     const user = await getItemByKey("users", userId);
     updateNavLinks();

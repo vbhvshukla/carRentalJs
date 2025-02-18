@@ -1,5 +1,5 @@
 import { getAllItems, getItemByKey } from "../js/utils/dbUtils.js";
-import { checkAuth, logout } from "../js/utils/auth.js";
+import { checkAuth, logout,checkOwnerApproved } from "../js/utils/auth.js";
 import { getCookie } from "../js/utils/cookie.js";
 import { cities } from "../js/utils/cities.js";
 
@@ -7,9 +7,13 @@ const userId = getCookie("userId");
 
 if (userId) {
     const user = await getItemByKey("users", userId);
+    // const isOwnerApproved = await checkOwnerApproved();
     if (user.role === "admin") {
         console.log("test");
         window.location.href = "../admin/dashboard.html";
+    }
+    else if(user.role==="owner"){
+        window.location.href="./owner-dashboard/odashboard.html";
     }
 }
 

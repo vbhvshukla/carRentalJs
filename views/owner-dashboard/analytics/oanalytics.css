@@ -89,7 +89,7 @@ body {
 
 .card {
     flex: 1;
-    padding: 20px;
+    padding: 20px;  
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -131,13 +131,13 @@ body {
 }
 
 .analytics-section canvas {
-    margin-bottom: 20px;
-    width: 100% !important;
+    margin-bottom: 10px;
+    /* width: 100% !important; */
     height: 300px !important;
-    background: white;
+    /* background: white; */
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 10px;
+    /* padding: 10px; */
     transition: transform 0.3s ease-in-out;
 }
 
@@ -200,7 +200,7 @@ body {
 }
 
 .analytics-section canvas:hover {
-    transform: scale(1.2);
+    transform: scale(1.0);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
     cursor: pointer;
 }

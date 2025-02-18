@@ -1,7 +1,7 @@
 import { getItemByIndex, getItemByKey, getAllItemsByIndex, addItem, updateItem } from "../../../js/utils/dbUtils.js";
 import { generateRandomId } from "../../../js/utils/generateId.js";
 import { getCookie } from "../../../js/utils/cookie.js";
-import { checkAuth, logout } from "../../../js/utils/auth.js";
+import { checkAuth, logout ,checkOwner} from "../../../js/utils/auth.js";
 
 const userId = getCookie("userId");
 if (!userId) window.location.href = "../../login/login.html";
@@ -189,6 +189,15 @@ document.getElementById('logout-link').addEventListener('click', (event) => {
 renderChatMessages();
 updateNavLinks();
 
+
+async function checkAndRedirectOwner() {
+    const isOwnerApproved = await checkOwner();
+    if (isOwnerApproved) {
+        window.location.href = "../../owner-dashboard/odashboard.html";
+    }
+}
+
+checkAndRedirectOwner();
 
 // async function renderCarDetails() {
 // const totalPriceDiv = document.getElementById("total-price-container");

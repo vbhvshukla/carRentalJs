@@ -74,13 +74,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (user.role === "owner" && !user.isApproved) {
+            emailError.textContent = "Your account is not approved yet. Please contact support.";
+            return;
+        }
+
+
         setCookie("username", user.username, 1);
         setCookie("userId", user.userId, 1);
         setCookie("role", user.role, 1);
 
         if (user.role === "admin") {
             window.location.href = "../admin/dashboard.html";
-        } else if (carId) {
+        }
+        else if(user.role==="owner" && user.isApproved){
+            window.location.href="../owner-dashboard/odashboard.html";
+        }
+         else if (carId) {
             window.location.href = `../booking/booking.html?carId=${carId}`;
         } else {
             window.location.href = "../index.html";

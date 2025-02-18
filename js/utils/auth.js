@@ -38,9 +38,14 @@ async function checkOwnerApproved() {
     return user && user.role === "owner" && user.isApproved;
 }
 
+async function checkOwner() {
+    const role = await getUserRole();
+    return role === "owner";
+}
+
 async function checkCustomer() {
     const role = await getUserRole();
     return role === "customer";
 }
 
-export { checkAuth, getUserRole, getUser, logout, checkAdmin, checkOwnerApproved, checkCustomer };
+export { checkAuth, getUserRole, getUser, logout, checkAdmin,checkOwner, checkOwnerApproved, checkCustomer };
