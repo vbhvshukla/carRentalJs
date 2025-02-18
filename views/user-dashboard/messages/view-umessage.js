@@ -66,6 +66,7 @@ async function sendMessage(chatId, fromUserId, toUserId, message, file = null) {
 
 async function renderChatMessages() {
     const chatId = getChatIdFromURL();
+    console.log(chatId);
     const allMessages = await getAllItemsByIndex("messages", "chatId", chatId);
     const chatMessagesContainer = document.getElementById("chat-messages");
     chatMessagesContainer.innerHTML = "";
@@ -155,181 +156,6 @@ async function disableBookedDates(carId) {
     });
 }
 
-async function renderCarDetails() {
-    const totalPriceDiv = document.getElementById("total-price-container");
-    totalPriceDiv.style.display = "none";
-    const chatId = getChatIdFromURL();
-    const carId = getCarIdFromChatId(chatId);
-    if (!carId) {
-        alert("Car not found.");
-        return;
-    }
-    const car = await getItemByKey("cars", carId);
-    if (!car) {
-        alert("Car not found.");
-        return;
-    }
-    await disableBookedDates(carId);
-    document.getElementById("start-date").addEventListener("change", handleDateChange);
-    document.getElementById("end-date").addEventListener("change", handleDateChange);
-    document.getElementById("bid-amount").addEventListener("input", handleDateChange);
-
-    document.getElementById("current-price").textContent = car.basePrice;
-    document.getElementById("owner-name").textContent = car.owner.username;
-
-    document.getElementById("bid-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const startDate = document.getElementById("start-date").value;
-        const endDate = document.getElementById("end-date").value;
-        const bidAmount = parseFloat(document.getElementById("bid-amount").value);
-        const existingBookings = await getAllItemsByIndex("bookings", "carId", carId);
-        const isOverlapping = existingBookings.some(booking =>
-            isDateRangeOverlap(new Date(booking.fromTimestamp), new Date(booking.toTimestamp), new Date(startDate), new Date(endDate))
-        );
-
-        if (isOverlapping) {
-            alert("This car is already booked for the selected dates. Please choose a different date range.");
-            return;
-        }
-        if (!startDate || !endDate || !bidAmount) {
-            alert("Please fill all fields.");
-            return;
-        }
-        if (new Date(startDate) < new Date()) {
-            alert("Start date cannot be before today's date.");
-            return;
-        }
-        if (new Date(startDate) >= new Date(endDate)) {
-            alert("Start date must be before end date.");
-            return;
-        }
-
-        if (bidAmount < car.basePrice) {
-            alert("Your bid must be higher than the base price of the car!");
-            return;
-        }
-
-        const bid = {
-            bidId: generateRandomId('bid'),
-            userId,
-            username: getCookie("username"),
-            bidAmount,
-            from: startDate,
-            to: endDate,
-            status: "pending",
-            createdAt: new Date().toISOString().split('T')[0],
-            car: {
-                carId: car.carId,
-                carName: car.carName,
-                carType: car.carType,
-                categoryId: car.categoryId,
-                categoryName: car.categoryName,
-                city: car.city,
-                basePrice: car.basePrice,
-                ownerId: car.ownerId,
-                ownerName: car.ownerName
-            }
-        };
-
-        await addItem("bids", bid);
-        const message = `New bid placed by ${getCookie("username")} for ${car.carName} from ${startDate} to ${endDate} with a bid amount of ₹${bidAmount}.`;
-        await sendMessage(chatId, userId, car.ownerId, message);
-        alert("Bid placed successfully!");
-    });
-
-    async function handleDateChange() {
-        const startDate = document.getElementById("start-date").value;
-        const endDate = document.getElementById("end-date").value;
-        const bidAmount = parseFloat(document.getElementById("bid-amount").value);
-        const totalPriceDiv = document.getElementById("total-price-container");
-
-        if (startDate && endDate && new Date(startDate) < new Date(endDate)) {
-            const overlappingBids = await getOverlappingBids(carId, startDate, endDate);
-            const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
-            const price = bidAmount || car.basePrice;
-            const totalPrice = days * price;
-            document.getElementById('total-price').textContent = totalPrice.toFixed(2);
-            totalPriceDiv.style.display = "block";
-            renderOverlappingBids(overlappingBids);
-        } else {
-            totalPriceDiv.style.display = "none";
-            document.getElementById('total-price').textContent = '';
-            document.getElementById("other-bids-list").innerHTML = "";
-        }
-    }
-
-    async function getOverlappingBids(carId, startDate, endDate) {
-        const allBids = await getAllItemsByIndex("bids", "carId", carId);
-        return allBids.filter(bid => isDateRangeOverlap(new Date(bid.from), new Date(bid.to), new Date(startDate), new Date(endDate)));
-    }
-
-    function isDateRangeOverlap(startDate1, endDate1, startDate2, endDate2) {
-        return (startDate1 <= endDate2 && endDate1 >= startDate2);
-    }
-
-    function renderOverlappingBids(bids) {
-        const otherBidsList = document.getElementById("other-bids-list");
-        otherBidsList.innerHTML = "";
-        if (bids.length === 0) {
-            otherBidsList.innerHTML = "<li>No other bids in the selected date range.</li>";
-            return;
-        }
-        bids.forEach(bid => {
-            const li = document.createElement("li");
-            li.textContent = `Existing Bids from ${bid.from} to ${bid.to} Current highest bid: ₹${bid.bidAmount}`;
-            otherBidsList.appendChild(li);
-        });
-    }
-
-    document.getElementById("send-chat-message-btn").addEventListener("click", async () => {
-        const messageInput = document.getElementById("chat-message-input");
-        const fileInput = document.getElementById("chat-file-input");
-        const message = messageInput.value.trim();
-        const file = fileInput.files[0];
-        if (message || file) {
-            await sendMessage(chatId, userId, car.ownerId, message, file);
-            messageInput.value = "";
-            fileInput.value = "";
-            renderChatMessages();
-        }
-    });
-
-    renderChatMessages();
-}
-
-document.getElementById('bid-amount').addEventListener('input', function () {
-    if (this.value < 0) {
-        alert("Please enter a valid number");
-        this.value = '';
-    }
-});
-
-document.getElementById('logout-link').addEventListener('click', (event) => {
-    event.preventDefault();
-    logout();
-});
-
-document.getElementById('start-date').addEventListener('change', function () {
-    const startDate = this.value;
-    const endDateInput = document.getElementById('end-date');
-    endDateInput.min = startDate;
-});
-
-renderCarDetails();
-updateNavLinks();
-
-const modal = document.getElementById("bid-modal");
-const btn = document.getElementById("place-bid-btn");
-const span = document.getElementsByClassName("close")[0];
-
-btn.onclick = function () {
-    modal.style.display = "block";
-}
-
-span.onclick = function () {
-    modal.style.display = "none";
-}
-
 async function updateNavLinks() {
     const isAuthenticated = await checkAuth();
     const logoutLink = document.getElementById('logout-link');
@@ -354,4 +180,185 @@ async function updateNavLinks() {
         logoutLink.style.display = 'none';
     }
 }
+
+
+document.getElementById('logout-link').addEventListener('click', (event) => {
+    event.preventDefault();
+    logout();
+});
+renderChatMessages();
+updateNavLinks();
+
+
+// async function renderCarDetails() {
+// const totalPriceDiv = document.getElementById("total-price-container");
+// totalPriceDiv.style.display = "none";
+//     const chatId = getChatIdFromURL();
+//     const carId = getCarIdFromChatId(chatId);
+//     if (!carId) {
+//         alert("Car not found.");
+//         return;
+//     }
+//     const car = await getItemByKey("cars", carId);
+//     if (!car) {
+//         alert("Car not found.");
+//         return;
+//     }
+//     await disableBookedDates(carId);
+//     document.getElementById("start-date").addEventListener("change", handleDateChange);
+//     document.getElementById("end-date").addEventListener("change", handleDateChange);
+//     document.getElementById("bid-amount").addEventListener("input", handleDateChange);
+
+//     document.getElementById("current-price").textContent = car.basePrice;
+//     document.getElementById("owner-name").textContent = car.owner.username;
+
+//     document.getElementById("bid-form").addEventListener("submit", async (event) => {
+//         event.preventDefault();
+//         const startDate = document.getElementById("start-date").value;
+//         const endDate = document.getElementById("end-date").value;
+//         const bidAmount = parseFloat(document.getElementById("bid-amount").value);
+//         const existingBookings = await getAllItemsByIndex("bookings", "carId", carId);
+//         const isOverlapping = existingBookings.some(booking =>
+//             isDateRangeOverlap(new Date(booking.fromTimestamp), new Date(booking.toTimestamp), new Date(startDate), new Date(endDate))
+//         );
+
+//         if (isOverlapping) {
+//             alert("This car is already booked for the selected dates. Please choose a different date range.");
+//             return;
+//         }
+//         if (!startDate || !endDate || !bidAmount) {
+//             alert("Please fill all fields.");
+//             return;
+//         }
+//         if (new Date(startDate) < new Date()) {
+//             alert("Start date cannot be before today's date.");
+//             return;
+//         }
+//         if (new Date(startDate) >= new Date(endDate)) {
+//             alert("Start date must be before end date.");
+//             return;
+//         }
+
+//         if (bidAmount < car.basePrice) {
+//             alert("Your bid must be higher than the base price of the car!");
+//             return;
+//         }
+
+//         const bid = {
+//             bidId: generateRandomId('bid'),
+//             userId,
+//             username: getCookie("username"),
+//             bidAmount,
+//             from: startDate,
+//             to: endDate,
+//             status: "pending",
+//             createdAt: new Date().toISOString().split('T')[0],
+//             car: {
+//                 carId: car.carId,
+//                 carName: car.carName,
+//                 carType: car.carType,
+//                 categoryId: car.categoryId,
+//                 categoryName: car.categoryName,
+//                 city: car.city,
+//                 basePrice: car.basePrice,
+//                 ownerId: car.ownerId,
+//                 ownerName: car.ownerName
+//             }
+//         };
+
+//         await addItem("bids", bid);
+//         const message = `New bid placed by ${getCookie("username")} for ${car.carName} from ${startDate} to ${endDate} with a bid amount of ₹${bidAmount}.`;
+//         await sendMessage(chatId, userId, car.ownerId, message);
+//         alert("Bid placed successfully!");
+//     });
+
+//     async function handleDateChange() {
+//         const startDate = document.getElementById("start-date").value;
+//         const endDate = document.getElementById("end-date").value;
+//         const bidAmount = parseFloat(document.getElementById("bid-amount").value);
+//         const totalPriceDiv = document.getElementById("total-price-container");
+
+//         if (startDate && endDate && new Date(startDate) < new Date(endDate)) {
+//             const overlappingBids = await getOverlappingBids(carId, startDate, endDate);
+//             const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+//             const price = bidAmount || car.basePrice;
+//             const totalPrice = days * price;
+//             document.getElementById('total-price').textContent = totalPrice.toFixed(2);
+//             totalPriceDiv.style.display = "block";
+//             renderOverlappingBids(overlappingBids);
+//         } else {
+//             totalPriceDiv.style.display = "none";
+//             document.getElementById('total-price').textContent = '';
+//             document.getElementById("other-bids-list").innerHTML = "";
+//         }
+//     }
+
+//     async function getOverlappingBids(carId, startDate, endDate) {
+//         const allBids = await getAllItemsByIndex("bids", "carId", carId);
+//         return allBids.filter(bid => isDateRangeOverlap(new Date(bid.from), new Date(bid.to), new Date(startDate), new Date(endDate)));
+//     }
+
+//     function isDateRangeOverlap(startDate1, endDate1, startDate2, endDate2) {
+//         return (startDate1 <= endDate2 && endDate1 >= startDate2);
+//     }
+
+//     function renderOverlappingBids(bids) {
+//         const otherBidsList = document.getElementById("other-bids-list");
+//         otherBidsList.innerHTML = "";
+//         if (bids.length === 0) {
+//             otherBidsList.innerHTML = "<li>No other bids in the selected date range.</li>";
+//             return;
+//         }
+//         bids.forEach(bid => {
+//             const li = document.createElement("li");
+//             li.textContent = `Existing Bids from ${bid.from} to ${bid.to} Current highest bid: ₹${bid.bidAmount}`;
+//             otherBidsList.appendChild(li);
+//         });
+//     }
+
+//     document.getElementById("send-chat-message-btn").addEventListener("click", async () => {
+//         const messageInput = document.getElementById("chat-message-input");
+//         const fileInput = document.getElementById("chat-file-input");
+//         const message = messageInput.value.trim();
+//         const file = fileInput.files[0];
+//         if (message || file) {
+//             await sendMessage(chatId, userId, car.ownerId, message, file);
+//             messageInput.value = "";
+//             fileInput.value = "";
+//             renderChatMessages();
+//         }
+//     });
+
+//     renderChatMessages();
+// }
+
+// document.getElementById('bid-amount').addEventListener('input', function () {
+//     if (this.value < 0) {
+//         alert("Please enter a valid number");
+//         this.value = '';
+//     }
+// });
+
+
+
+// document.getElementById('start-date').addEventListener('change', function () {
+//     const startDate = this.value;
+//     const endDateInput = document.getElementById('end-date');
+//     endDateInput.min = startDate;
+// });
+
+// renderCarDetails();
+
+// const modal = document.getElementById("bid-modal");
+// const btn = document.getElementById("place-bid-btn");
+// const span = document.getElementsByClassName("close")[0];
+
+// btn.onclick = function () {
+//     modal.style.display = "block";
+// }
+
+// span.onclick = function () {
+//     modal.style.display = "none";
+// }
+
 

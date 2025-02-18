@@ -24,7 +24,7 @@ window.sortBookings = function (column) {
 
     loadUserBookings();
 }
-
+//Apply the fitlers
 window.applyFilters = function () {
     const filters = {
         searchCar: document.getElementById("search-car").value,
@@ -34,7 +34,7 @@ window.applyFilters = function () {
     };
     loadUserBookings(1, filters);
 }
-
+//Get the filters 
 function applyFilterConditions(booking, filters) {
     if (filters.searchCar && !booking.car.carName.toLowerCase().includes(filters.searchCar.toLowerCase())) return false;
     if (filters.startDate && new Date(booking.from) < new Date(filters.startDate)) return false;
@@ -53,7 +53,7 @@ function applyFilterConditions(booking, filters) {
 
     return true;
 }
-
+//Pagination
 function updatePaginationControls(currentPage, totalItems) {
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     const paginationControls = document.getElementById("pagination-controls");
@@ -86,7 +86,7 @@ function highlightActiveLink() {
         }
     });
 }
-
+//Soft cancel the booking
 async function cancelBooking(bookingId) {
     if (confirm("Are you sure you want to cancel this booking?")) {
         try {
@@ -214,14 +214,14 @@ async function loadUserBookings(page = 1, filters = {}) {
     const totalItems = await getTotalItems("bookings");
     updatePaginationControls(page, totalItems);
 }
-
+//Open the modal
 function openRatingModal(carId, carName) {
     const modal = document.getElementById("rating-modal");
     document.getElementById("modal-car-name").textContent = carName;
     modal.setAttribute("data-car-id", carId);
     modal.classList.remove("hidden");
 }
-
+//Submit the rating 
 document.getElementById("submit-rating").addEventListener("click", async () => {
     const carId = document.getElementById("rating-modal").getAttribute("data-car-id");
     const rating = parseFloat(document.getElementById("user-rating").value);

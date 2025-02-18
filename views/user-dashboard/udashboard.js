@@ -2,6 +2,7 @@ import { getAllItemsByIndex, getItemByKey, updateItem } from "../../js/utils/dbU
 import { checkAuth, logout } from "../../js/utils/auth.js";
 import { getCookie } from "../../js/utils/cookie.js";
 import { showToast } from "../../js/utils/toastUtils.js";
+
 async function updateNavLinks() {
     const isAuthenticated = await checkAuth();
     const logoutLink = document.getElementById('logout-link');
@@ -40,6 +41,7 @@ function highlightActiveLink() {
     });
 }
 
+//Basically the profile's section
 document.addEventListener("DOMContentLoaded", async () => {
     if (!checkAuth()) {
         window.location.href = "../index.html";
@@ -62,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     `<a href="${user.verificationFile}" target="_blank">View Document</a>`;
         }
     }
-
+    //Get the old password, encrypt it and check it with the already saved password
     document.getElementById("old-password").addEventListener("input", () => {
         const inputPassword = document.getElementById("old-password").value;
         const hashedInput = CryptoJS.SHA256(inputPassword).toString();
@@ -84,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         await updateItem("users", { ...user, password: hashedNewPassword });
         showToast("Password updated successfully!");
     });
-
+//validate the new password
     function validateNewPassword(password) {
         const errorField = document.getElementById("new-password-error");
 

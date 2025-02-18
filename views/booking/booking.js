@@ -57,6 +57,17 @@ async function renderCarDetails() {
     document.getElementById("local-charges").textContent = `Local: ₹${car.rentalOptions.local.pricePerHour} per hour`;
     document.getElementById("outstation-charges").textContent = `Outstation: ₹${car.rentalOptions.outstation.pricePerDay} per day`;
 
+    if (car.isAvailableForLocal) {
+        document.getElementById("local-charges").style.display = "inline-block";
+    } else {
+        document.getElementById("local-charges").style.display = "none";
+    }
+
+    if (car.isAvailableForOutstation) {
+        document.getElementById("outstation-charges").style.display = "inline-block";
+    } else {
+        document.getElementById("outstation-charges").style.display = "none";
+    }
 
     await disableBookedDates(carId);
 
@@ -68,8 +79,11 @@ async function renderCarDetails() {
     document.getElementById("local-button").addEventListener("click", () => toggleRentalType("local", car));
     document.getElementById("outstation-button").addEventListener("click", () => toggleRentalType("outstation", car));
 
-    // Set the initial rental type to "local"
-    toggleRentalType("local", car);
+    if (car.isAvailableForLocal) {
+        toggleRentalType("local", car);
+    } else if (car.isAvailableForOutstation) {
+        toggleRentalType("outstation", car);
+    }
 
     document.getElementById("submit-bid").addEventListener("click", async (event) => {
         event.preventDefault();
@@ -274,15 +288,21 @@ function toggleRentalType(type, car) {
     const localForm = document.getElementById("local-form");
     const outstationForm = document.getElementById("outstation-form");
     const currentPriceSpan = document.getElementById("current-price");
+    const localButton = document.getElementById("local-button");
+    const outstationButton = document.getElementById("outstation-button");
 
     if (type === "local") {
         localForm.style.display = "block";
         outstationForm.style.display = "none";
         currentPriceSpan.textContent = car.rentalOptions.local.pricePerHour.toFixed(2);
+        localButton.classList.add("active");
+        outstationButton.classList.remove("active");
     } else {
         localForm.style.display = "none";
         outstationForm.style.display = "block";
         currentPriceSpan.textContent = car.rentalOptions.outstation.pricePerDay.toFixed(2);
+        localButton.classList.remove("active");
+        outstationButton.classList.add("active");
     }
 }
 

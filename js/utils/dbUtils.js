@@ -16,6 +16,7 @@ function validateSchema(schema, data) {
     return true;
 }
 
+//While adding item or updating item validate the schema
 async function addItem(storeName, item) {
     try {
         if (!dbSchema[storeName]) {
@@ -37,7 +38,7 @@ async function addItem(storeName, item) {
         return Promise.reject(new Error(`Database error: ${error.message}`));
     }
 }
-
+//Update function
 async function updateItem(storeName, item) {
     try {
         if (!dbSchema[storeName]) {
@@ -59,7 +60,7 @@ async function updateItem(storeName, item) {
         return Promise.reject(new Error(`Database error: ${error.message}`));
     }
 }
-
+//Get the item by it's index
 async function getItemByIndex(storeName, indexName, key) {
     try {
         await openDb();

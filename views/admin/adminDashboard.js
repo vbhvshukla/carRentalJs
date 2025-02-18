@@ -20,6 +20,7 @@ let carSortDirection = 'asc';
 if (!user || user.role !== "admin") {
     window.location.href = "../login/login.html";
 }
+//Load all the users
 
 async function loadUsers() {
     const users = await getAllItems("users");
@@ -55,6 +56,9 @@ async function loadUsers() {
     updatePaginationControls("user-pagination", currentPageUsers, users.length);
 }
 
+
+//Load all the cars
+
 async function loadCars() {
     const cars = await getAllItems("cars");
     const carTableBody = document.getElementById("car-table").querySelector("tbody");
@@ -88,6 +92,8 @@ async function loadCars() {
     updatePaginationControls("car-pagination", currentPageCars, cars.length);
 }
 
+//Load all categories
+
 async function loadCategories() {
     const categories = await getAllItems("categories");
     const categoryTableBody = document.getElementById("category-table").querySelector("tbody");
@@ -105,6 +111,9 @@ async function loadCategories() {
     });
 }
 
+
+//Load analytics
+
 async function loadAnalytics() {
     const analytics = [
         { title: "Total Users", value: await getTotalItems("users") },
@@ -120,6 +129,8 @@ async function loadAnalytics() {
         analyticsContainer.appendChild(div);
     });
 }
+
+//Model functionality
 
 function showUserApprovalModal(userId) {
     const modal = document.getElementById("user-approval-modal");
@@ -150,6 +161,8 @@ function closeModal(modalId) {
     modal.style.display = "none";
 }
 
+//User Approval
+
 async function approveUser() {
     const modal = document.getElementById("user-approval-modal");
     const userId = modal.getAttribute("data-user-id");
@@ -159,6 +172,8 @@ async function approveUser() {
     closeModal("user-approval-modal");
     loadUsers();
 }
+
+//Invalidate/Delete the user
 
 async function invalidateUser() {
     const modal = document.getElementById("user-approval-modal");
@@ -170,6 +185,7 @@ async function invalidateUser() {
     loadUsers();
 }
 
+//Removes from DB (user)
 async function deleteUser(userId) {
     if (confirm("Are you sure you want to delete this user?")) {
         const user = await getItemByKey("users", userId);
@@ -179,6 +195,7 @@ async function deleteUser(userId) {
     }
 }
 
+//Soft delete the car
 async function deleteCar(carId) {
     if (confirm("Are you sure you want to delete this car?")) {
         const car = await getItemByKey("cars", carId);
@@ -188,6 +205,7 @@ async function deleteCar(carId) {
     }
 }
 
+//Remove from DB (category)
 async function deleteCategory(categoryId) {
     if (confirm("Are you sure you want to delete this category?")) {
         await deleteItem("categories", categoryId);
@@ -195,6 +213,8 @@ async function deleteCategory(categoryId) {
     }
 }
 
+
+//Add category modal
 function showAddCategoryModal() {
     const modal = document.getElementById("add-category-modal");
     modal.style.display = "block";
@@ -204,7 +224,7 @@ function showAddUserModal() {
     const modal = document.getElementById("add-user-modal");
     modal.style.display = "block";
 }
-
+//Removed this
 function showChangeRatingModal(type, id, currentRating, currentRatingCount) {
     const modal = document.getElementById("change-rating-modal");
     document.getElementById("new-rating").value = currentRating;
@@ -369,7 +389,7 @@ function addSortingEventListeners() {
         });
     });
 }
-
+//If admin user does not exist add it.
 async function addAdminUser() {
     const existingAdmin = await getAllItems("users").then(users => users.find(user => user.email === "admin@example.com"));
     if (existingAdmin) {
@@ -395,12 +415,33 @@ async function addAdminUser() {
     console.log("Admin user added successfully.");
 }
 
+async function injectRandomRatings() {
+    const users = await getAllItems("users");
+    const cars = await getAllItems("cars");
+
+    for (const user of users) {
+        user.avgRating = parseFloat((Math.random() * 2 + 3).toFixed(1)); // Random rating between 0 and 5
+        user.ratingCount = Math.floor(Math.random() * 100); // Random rating count between 0 and 100
+        await updateItem("users", user);
+    }
+
+    for (const car of cars) {
+        car.avgRating = parseFloat((Math.random() *2 + 3).toFixed(1)); // Random rating between 0 and 5
+        car.ratingCount = Math.floor(Math.random() * 100); // Random rating count between 0 and 100
+        await updateItem("cars", car);
+    }
+
+    console.log("Random ratings injected successfully.");
+}
+
+// Call the function to inject random ratings
+injectRandomRatings();
 loadUsersWithPagination();
 loadCarsWithPagination();
 loadCategories();
 updateNavLinks();
 addSortingEventListeners();
-addAdminUser();
+// addAdminUser();
 
 window.showUserApprovalModal = showUserApprovalModal;
 window.closeModal = closeModal;

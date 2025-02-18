@@ -23,6 +23,8 @@ cities.forEach(city => {
     cityList.appendChild(option);
 });
 
+//Dynamically generating the star rating of the card
+
 function generateStarRating(avgRating) {
     const fullStars = Math.floor(avgRating);
     const halfStar = avgRating % 1 >= 0.5 ? 1 : 0;
@@ -35,10 +37,14 @@ function generateStarRating(avgRating) {
     );
 }
 
+//Redirection to Booking page sending the params as well.
+
 function redirectToBookingPage(carId) {
     window.location.href = `./booking/booking.html?carId=${carId}`;
 }
 
+
+//Function to dnymically create card and append it to the parent element.
 function createCarCard(car) {
     const card = document.createElement("div");
     card.className = "car-card";
@@ -118,6 +124,7 @@ function createCarCard(car) {
     return card;
 }
 
+//Filter function
 function renderFilteredCars(cars) {
     const carsContainer = document.getElementById("cars-container");
     carsContainer.innerHTML = "";
@@ -131,6 +138,7 @@ function renderFilteredCars(cars) {
     });
 }
 
+//Check the car's availability
 async function getAvailableCars() {
     const today = new Date();
     const carAvailability = await getAllItems("carAvailability");
@@ -151,6 +159,7 @@ async function getAvailableCars() {
     return availableCars;
 }
 
+//Populate the features list for the dropdown.
 function populateFeaturesDatalist(features) {
     const featuresList = document.getElementById('features-list');
     featuresList.innerHTML = "";
@@ -191,6 +200,7 @@ async function updateNavLinks() {
     }
 }
 
+//Function to get the available cars and render it.
 async function renderCars() {
     const cars = await getAvailableCars();
     const carsContainer = document.getElementById("cars-container");
@@ -201,6 +211,7 @@ async function renderCars() {
     });
 }
 
+//Getting the filtered cars.
 async function getFilteredCars(filters) {
     const today = new Date();
     const carAvailability = await getAllItems("carAvailability");
@@ -269,6 +280,7 @@ window.updatePriceRangeValue = function (value) {
     document.getElementById('price-range-value').textContent = value;
 }
 
+//Search form
 document.getElementById('search-form').addEventListener('submit', async function (event) {
     event.preventDefault();
 

@@ -214,8 +214,8 @@ async function renderPendingBids() {
         const rentalTypeLabel = bid.rentalType === "local" ? "Local" : "Outstation";
         const row = `<tr>
             <td>${bid.car.carName}</td>
-            <td>$${bid.bidAmount}</td>
-            <td>$${totalAmount.toFixed(2)}</td>
+            <td>₹${bid.bidAmount}</td>
+            <td>₹${totalAmount.toFixed(2)}</td>
             <td>${bid.user.username}</td>
             <td>${bid.fromTimestamp}</td>
             <td>${bid.toTimestamp}</td>
@@ -319,8 +319,8 @@ async function renderAllBids() {
         const rentalTypeLabel = bid.rentalType === "local" ? "Local" : "Outstation";
         const row = `<tr>
             <td>${bid.car.carName}</td>
-            <td>$${bid.bidAmount}</td>
-            <td>$${totalAmount.toFixed(2)}</td>
+            <td>₹${bid.bidAmount}</td>
+            <td>₹${totalAmount.toFixed(2)}</td>
             <td>${bid.user.username}</td>
             <td>${bid.fromTimestamp}</td>
             <td>${bid.toTimestamp}</td>

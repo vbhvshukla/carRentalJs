@@ -140,6 +140,8 @@ body {
   transition: all 0.3s;
 }
 
+
+
 .bid-form input:focus,
 .chatbox input:focus {
   border-color: #3498db;
@@ -157,6 +159,11 @@ body {
   transition: all 0.3s;
   width: 100%;
 }
+
+/* .bid-form .active {
+  background-color: #007bff !important;
+  color: white !important;
+} */
 
 .bid-form button:hover,
 .chatbox button:hover {
@@ -423,4 +430,13 @@ input[type="date"]::-webkit-datetime-edit {
 
 .toast.info {
     background-color: #4caf50;
+}
+
+.rental-type-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.rental-type-buttons button {
+  flex: 1;
 }

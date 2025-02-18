@@ -1,8 +1,12 @@
 import { getAllItems, getItemByKey, getAllItemsByIndex, getItemsByTimeRange } from "../../../js/utils/dbUtils.js";
-import { checkAuth, logout } from "../../../js/utils/auth.js";
-import { getCookie } from "../../../js/utils/cookie.js";
+import { checkAuth } from "../../../js/utils/auth.js";
+import { getCookie,setCookie } from "../../../js/utils/cookie.js";
 
 const userId = getCookie("userId");
+
+if(!userId){
+    window.location.href="../../index.html";
+}
 const user = await getItemByKey("users", userId);
 if (!user || user.role !== "owner" || !user.isApproved) {
     window.location.href = user.role === "customer" ? "../../user-dashboard/udashboard.html" : "../../login/login.html";
@@ -187,7 +191,7 @@ function getRevenueOverMonths(bookings) {
         const month = new Date(b.createdAt).toISOString().slice(0, 7);
         revenue[month] = (revenue[month] || 0) + b.bid.bidAmount;
     });
-    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue ($)", data: Object.values(revenue), backgroundColor: "purple" }] };
+    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue (₹)", data: Object.values(revenue), backgroundColor: "purple" }] };
 }
 
 function getBidAmountOverTime(bids) {
@@ -240,7 +244,7 @@ function getTotalRevenueOverTime(bookings, bids) {
         const date = new Date(b.createdAt).toISOString().split("T")[0];
         revenue[date] = (revenue[date] || 0) + b.bidAmount;
     });
-    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue ($)", data: Object.values(revenue), borderColor: "blue", fill: false }] };
+    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue (₹)", data: Object.values(revenue), borderColor: "blue", fill: false }] };
 }
 
 function getAvgRevenuePerCar(bookings) {
@@ -250,7 +254,7 @@ function getAvgRevenuePerCar(bookings) {
     });
     const carNames = Object.keys(revenue);
     const avgRevenue = carNames.map(car => revenue[car]);
-    return { labels: carNames, datasets: [{ label: "Avg. Revenue ($)", data: avgRevenue, backgroundColor: "green" }] };
+    return { labels: carNames, datasets: [{ label: "Avg. Revenue (₹)", data: avgRevenue, backgroundColor: "green" }] };
 }
 
 function getRevenueByRentalType(bookings) {
@@ -262,7 +266,7 @@ function getRevenueByRentalType(bookings) {
             revenue.outstation += b.bid.bidAmount;
         }
     });
-    return { labels: ["Local", "Outstation"], datasets: [{ label: "Revenue ($)", data: [revenue.local, revenue.outstation], backgroundColor: ["blue", "green"] }] };
+    return { labels: ["Local", "Outstation"], datasets: [{ label: "Revenue (₹)", data: [revenue.local, revenue.outstation], backgroundColor: ["blue", "green"] }] };
 }
 
 function getAvgRentalDuration(bookings) {
@@ -302,7 +306,7 @@ function getRevenueByCity(bookings) {
         const city = b.bid.car.city;
         revenue[city] = (revenue[city] || 0) + b.bid.bidAmount;
     });
-    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue ($)", data: Object.values(revenue), backgroundColor: "red" }] };
+    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue (₹)", data: Object.values(revenue), backgroundColor: "red" }] };
 }
 
 function getCarUtilizationRate(bookings, cars) {
@@ -373,6 +377,15 @@ function getCarsPerCity(cars) {
     const data = {};
     cars.forEach(c => data[c.city] = (data[c.city] || 0) + 1);
     return { labels: Object.keys(data), datasets: [{ label: "Cars", data: Object.values(data), backgroundColor: ["blue", "orange", "yellow", "pink"] }] };
+}
+
+function logout() {
+    const cookies = document.cookie.split("; ");
+    for (let i = 0; i < cookies.length; i++) {
+        const [name] = cookies[i].split("=");
+        setCookie(name, "", -1); 
+    }
+    window.location.href = "../../index.html";
 }
 
 document.getElementById('logout-link').addEventListener('click', (event) => {
