@@ -1,6 +1,6 @@
 import { getAllItems, addItem, getItemByKey } from "../../../../js/utils/dbUtils.js";
-import { getCookie } from "../../../../js/utils/cookie.js";
-import { checkAuth, logout } from "../../../../js/utils/auth.js";
+import { getCookie ,setCookie} from "../../../../js/utils/cookie.js";
+import { checkAuth } from "../../../../js/utils/auth.js";
 import { generateRandomId } from "../../../../js/utils/generateId.js";
 import { readFileAsDataURL } from "../../../../js/utils/readFile.js";
 import { validateForm, validateField } from "../../../../js/utils/validation.js";
@@ -20,6 +20,7 @@ const featuresList = document.getElementById('features-list');
 const featureInput = document.getElementById('feature-input');
 const addFeatureBtn = document.getElementById('add-feature-btn');
 
+//Populate categories
 getAllItems("categories").then(categories => {
     if (categories.length === 0) {
         showToast("No categories found. Please add categories first.", "error");
@@ -33,12 +34,14 @@ getAllItems("categories").then(categories => {
     });
 });
 
+//Populate city
 cities.forEach(city => {
     const option = document.createElement('option');
     option.value = city;
     cityList.appendChild(option);
 });
 
+//Add a feature
 addFeatureBtn.addEventListener("click", () => {
     const feature = featureInput.value.trim();
     const existingFeatures = Array.from(featuresList.children).map(li => li.firstChild.textContent.trim());
@@ -47,7 +50,7 @@ addFeatureBtn.addEventListener("click", () => {
         showToast("Feature is empty or already added!", "error");
         return;
     }
-
+    //Limit the featured to 3 
     if (featuresList.children.length < 3) {
         const li = document.createElement("li");
         const span = document.createElement("span");
@@ -71,6 +74,7 @@ async function readFiles(files) {
     return Promise.all(filePromises);
 }
 
+
 const addImageBtn = document.getElementById("add-image-btn");
 const imageUploadInput = document.getElementById("image-upload");
 const imageFileList = document.getElementById("image-file-list");
@@ -81,7 +85,7 @@ let selectedImages = [];
 addImageBtn.addEventListener("click", () => {
     imageUploadInput.click();
 });
-
+//Image upload
 imageUploadInput.addEventListener("change", async function () {
     if (selectedImages.length + this.files.length > 5) {
         imageWarning.style.display = "block";
@@ -102,6 +106,8 @@ imageUploadInput.addEventListener("change", async function () {
     this.value = "";
 });
 
+
+//Display and update the image list
 function updateImageList() {
     imageFileList.innerHTML = "";
     selectedImages.forEach((imageObj, index) => {
@@ -133,7 +139,7 @@ function updateImageList() {
         imageFileList.appendChild(li);
     });
 }
-
+//Centralised validation
 const formRules = {
     carName: { required: true, carName: true },
     categoryId: { required: true },
@@ -153,14 +159,22 @@ const formRules = {
     extraKmRateOutstation: { number: true }
 };
 
-
+function logout() {
+    const cookies = document.cookie.split("; ");
+    for (let i = 0; i < cookies.length; i++) {
+        const [name] = cookies[i].split("=");
+        setCookie(name, "", -1); 
+    }
+    window.location.href = "../../../index.html";
+}
+//Add car form
 
 document.getElementById('add-car-form').addEventListener('submit', async function (event) {
     event.preventDefault();
 
     const formElement = document.getElementById('add-car-form');
     const formData = new FormData(formElement);
-
+    //Get all the fields of form
     const formObject = {
         carName: formData.get('car-name').trim(),
         categoryId: formData.get('category').trim(),
@@ -183,6 +197,7 @@ document.getElementById('add-car-form').addEventListener('submit', async functio
         extraKmRateOutstation: parseFloat(formData.get('extra-km-rate-outstation')) || 0
     };
 
+    //Validate the form
     const errors = validateForm(formObject, formRules);
 
     if (Object.keys(errors).length > 0) {
@@ -194,7 +209,7 @@ document.getElementById('add-car-form').addEventListener('submit', async functio
         showToast("Please fill in all required fields correctly.", "error");
         return;
     }
-
+    //On page validation
     if (selectedImages.length === 0) {
         showToast("Please upload at least one image.", "error");
         return;
@@ -215,7 +230,7 @@ document.getElementById('add-car-form').addEventListener('submit', async functio
         showToast("Invalid category selected.", "error");
         return;
     }
-
+    //Update the car object
     const car = {
         carId: generateRandomId(),
         owner: {

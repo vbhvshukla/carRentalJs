@@ -109,20 +109,45 @@ async function getItemByKey(storeName, key) {
     }
 }
 
-async function getAllItems(storeName) {
+// async function getAllItems(storeName) {
+//     try {
+//         await openDb();
+//         const store = getObjectStore(storeName, "readonly");
+//         return new Promise((resolve, reject) => {
+//             const request = store.getAll();
+//             request.onsuccess = () => resolve(request.result || []);
+//             request.onerror = (event) => reject(new Error(`Fetch failed: ${event.target.error}`));
+//         });
+//     } catch (error) {
+//         return Promise.reject(new Error(`Database error: ${error.message}`));
+//     }
+// }
+
+async function getAllItems(storeName, limit = 1000) {
     try {
         await openDb();
         const store = getObjectStore(storeName, "readonly");
         return new Promise((resolve, reject) => {
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result || []);
+            const request = store.openCursor();
+            const items = [];
+            let count = 0;
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor && count < limit) {
+                    items.push(cursor.value);
+                    count++;
+                    cursor.continue();
+                } else {
+                    resolve(items);
+                }
+            };
             request.onerror = (event) => reject(new Error(`Fetch failed: ${event.target.error}`));
         });
     } catch (error) {
         return Promise.reject(new Error(`Database error: ${error.message}`));
     }
 }
-
 async function deleteItem(storeName, key) {
     try {
         await openDb();

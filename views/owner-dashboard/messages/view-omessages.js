@@ -1,6 +1,6 @@
 import { getAllItems, getItemByKey } from "../../../js/utils/dbUtils.js";
-import { getCookie } from "../../../js/utils/cookie.js";
-import { checkAuth, logout } from "../../../js/utils/auth.js";
+import { getCookie,setCookie } from "../../../js/utils/cookie.js";
+import { checkAuth } from "../../../js/utils/auth.js";
 
 const userId = getCookie("userId");
 const user = await getItemByKey("users", userId);
@@ -23,17 +23,18 @@ async function updateNavLinks() {
     }
 }
 
+//Load all conversations of the users
 async function loadConversations() {
     const conversations = await getAllItems("conversations");
     const messageList = document.getElementById("message-list");
     const noConversations = document.getElementById("no-conversations");
     messageList.innerHTML = "";
 
-    console.log(conversations);
+    // console.log(conversations);
     console.log("User id is :: ", userId);
     const ownerConversations = conversations.filter(conversation => conversation.owner.userId === userId);
 
-    console.log(ownerConversations);
+    // console.log(ownerConversations);
 
     if (ownerConversations.length === 0) {
         noConversations.classList.remove("hidden");
@@ -60,7 +61,7 @@ async function loadConversations() {
         }
     }
 }
-
+//Redirect function
 function redirectToChat(chatId) {
     const url = `./view-omessage.html?chatId=${chatId}`;
     window.location.href = url;
@@ -80,8 +81,17 @@ function highlightActiveLink() {
     });
 }
 
-highlightActiveLink();
 
+function logout() {
+    const cookies = document.cookie.split("; ");
+    for (let i = 0; i < cookies.length; i++) {
+        const [name] = cookies[i].split("=");
+        setCookie(name, "", -1); 
+    }
+    window.location.href = "../../index.html";
+}
+
+highlightActiveLink();
 loadConversations();
 updateNavLinks();
 

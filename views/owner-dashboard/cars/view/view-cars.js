@@ -1,11 +1,11 @@
 import { getAllItemsByIndex, updateItem, getAllItems, getItemByKey, updateCarInAllStores } from "../../../../js/utils/dbUtils.js";
 import { checkAuth } from "../../../../js/utils/auth.js";
-import { getCookie ,setCookie} from "../../../../js/utils/cookie.js";
+import { getCookie, setCookie } from "../../../../js/utils/cookie.js";
 import { readFileAsDataURL } from "../../../../js/utils/readFile.js";
 import { validateForm } from "../../../../js/utils/validation.js";
 
 const userId = getCookie("userId");
-if(!userId){window.location.href="../../../index.html"}
+if (!userId) { window.location.href = "../../../index.html" }
 const user = await getItemByKey("users", userId);
 
 if (!user || user.role !== "owner" || !user.isApproved) {
@@ -31,7 +31,7 @@ function logout() {
     const cookies = document.cookie.split("; ");
     for (let i = 0; i < cookies.length; i++) {
         const [name] = cookies[i].split("=");
-        setCookie(name, "", -1); 
+        setCookie(name, "", -1);
     }
     window.location.href = "../../../index.html";
 }
@@ -179,7 +179,7 @@ function generateStarRating(avgRating) {
         "☆".repeat(emptyStars)
     );
 }
-
+//Edit car function
 function editCar(car) {
     const carDetails = `
         <div class="car-edit-form">
@@ -198,11 +198,12 @@ function editCar(car) {
                     <textarea id="description" name="description">${car.description}</textarea>
                 </div>
                 <div class="form-group">
-                    <label for="availability">Availability:</label>
-                    <select id="availability" name="availability" required>
-                        <option value="Available" ${car.availability === 'Available' ? 'selected' : ''}>Available</option>
-                        <option value="Unavailable" ${car.availability === 'Unavailable' ? 'selected' : ''}>Save As Draft</option>
-                    </select>
+                    <label for="isAvailableForLocal">Available for Local:</label>
+                    <input type="checkbox" id="isAvailableForLocal" name="isAvailableForLocal" ${car.isAvailableForLocal ? 'checked' : ''}>
+                </div>
+                <div class="form-group">
+                    <label for="isAvailableForOutstation">Available for Outstation:</label>
+                    <input type="checkbox" id="isAvailableForOutstation" name="isAvailableForOutstation" ${car.isAvailableForOutstation ? 'checked' : ''}>
                 </div>
                 <div class="form-group">
                     <label for="existing-images">Current Images:</label>
@@ -298,15 +299,16 @@ function editCar(car) {
         event.preventDefault();
 
         const formData = new FormData(event.target);
-const formObject = {
+        //Get all the field of edit car form
+        const formObject = {
             carName: formData.get("carName").trim(),
             categoryId: formData.get("category").trim(),
             city: formData.get("city").trim(),
             description: formData.get("description").trim(),
             carType: formData.get("car-type").trim().toLowerCase(),
             features: Array.from(document.querySelectorAll("#features-list li")).map(li => li.firstChild.textContent),
-            isAvailableForLocal: formData.get("available-local") === "on",
-            isAvailableForOutstation: formData.get("available-outstation") === "on",
+            isAvailableForLocal: formData.get("isAvailableForLocal") === "on" ? true : false,
+            isAvailableForOutstation: formData.get("isAvailableForOutstation") === "on" ? true : false,
             localPrice: parseFloat(formData.get("local-price")) || 0,
             maxKmPerHour: parseFloat(formData.get("max-km-per-hour")) || 0,
             extraHourRate: parseFloat(formData.get("extra-hour-rate")) || 0,
@@ -320,6 +322,7 @@ const formObject = {
             extraKmRateOutstation: parseFloat(formData.get("extra-km-rate-outstation")) || 0
         };
 
+        //Validate the form fields
         const errors = validateForm(formObject, {
             carName: { required: true, carName: true },
             categoryId: { required: true },
@@ -348,48 +351,6 @@ const formObject = {
             alert("Please fill in all required fields correctly.");
             return;
         }
-
-        // const formObject = {
-        //     carName: formData.get("carName").trim(),
-        //     categoryId: formData.get("category").trim(),
-        //     city: formData.get("city").trim(),
-        //     description: formData.get("description").trim(),
-        //     carType: formData.get("car-type").trim().toLowerCase(),
-        //     features: Array.from(document.querySelectorAll("#features-list li")).map(li => li.firstChild.textContent),
-        //     isAvailableForLocal: formData.get("available-local") === "on",
-        //     isAvailableForOutstation: formData.get("available-outstation") === "on",
-        //     localPrice: parseFloat(formData.get("local-price")) || 0,
-        //     maxKmPerHour: parseFloat(formData.get("max-km-per-hour")) || 0,
-        //     extraHourRate: parseFloat(formData.get("extra-hour-rate")) || 0,
-        //     extraKmRate: parseFloat(formData.get("extra-km-rate")) || 0,
-        //     outstationPrice: parseFloat(formData.get("outstation-price")) || 0,
-        //     pricePerKm: parseFloat(formData.get("price-per-km")) || 0,
-        //     minimumKmChargeable: parseFloat(formData.get("minimum-km-chargeable")) || 0,
-        //     maxKmLimitPerDay: parseFloat(formData.get("minimum-km-chargeable")) + 100 || 0,
-        //     extraDayRate: parseFloat(formData.get("extra-day-rate")) || 0,
-        //     extraHourlyRate: parseFloat(formData.get("extra-hourly-rate")) || 0,
-        //     extraKmRateOutstation: parseFloat(formData.get("extra-km-rate-outstation")) || 0
-        // };
-
-        // const errors = validateForm(formObject, {
-        //     carName: { required: true, carName: true },
-        //     categoryId: { required: true },
-        //     city: { required: true, citySelect: true },
-        //     description: { required: true, maxLength: 500 },
-        //     carType: { required: true, carType: true },
-        //     localPrice: { number: true },
-        //     maxKmPerHour: { number: true },
-        //     extraHourRate: { number: true },
-        //     extraKmRate: { number: true },
-        //     outstationPrice: { number: true },
-        //     pricePerKm: { number: true },
-        //     minimumKmChargeable: { number: true },
-        //     maxKmLimitPerDay: { number: true },
-        //     extraDayRate: { number: true },
-        //     extraHourlyRate: { number: true },
-        //     extraKmRateOutstation: { number: true }
-        // });
-
         if (Object.keys(errors).length > 0) {
             Object.keys(errors).forEach(field => {
                 const errorElement = document.getElementById(`${field}-error`);
@@ -399,14 +360,16 @@ const formObject = {
             alert("Please fill in all required fields correctly.");
             return;
         }
-
+        //Updated car object
         const updatedCar = {
             ...car,
             carName: formData.get("carName").trim(),
-                        carType: formData.get("car-type").trim(),
-                        city: formData.get("city").trim(),
+            carType: formData.get("car-type").trim(),
+            city: formData.get("city").trim(),
             description: formData.get("description").trim(),
             featured: Array.from(document.querySelectorAll("#features-list li")).map(li => li.firstChild.textContent),
+            isAvailableForLocal: formData.get("isAvailableForLocal") ? true : false,
+            isAvailableForOutstation: formData.get("isAvailableForOutstation") ? true : false,
             rentalOptions: {
                 local: {
                     pricePerHour: parseFloat(formData.get("local-price")) || 0,
@@ -426,7 +389,7 @@ const formObject = {
             }
         };
 
-                const newImages = document.getElementById("new-images").files;
+        const newImages = document.getElementById("new-images").files;
         if (newImages.length > 0) {
             const newImageBase64 = await Promise.all(Array.from(newImages).map(file => readFileAsDataURL(file)));
             updatedCar.images.push(...newImageBase64);
@@ -443,6 +406,7 @@ const formObject = {
         renderOwnerCars();
     });
 
+    //Add feature button
     document.getElementById("add-feature-btn").addEventListener("click", () => {
         const featureInput = document.getElementById("feature-input");
         const feature = featureInput.value.trim();
@@ -452,6 +416,20 @@ const formObject = {
             li.innerHTML = `${feature} <button type="button" onclick="removeFeature(this)">Remove</button>`;
             featureList.appendChild(li);
             featureInput.value = "";
+        }
+    });
+}
+
+function highlightActiveLink() {
+    const links = document.querySelectorAll('.sidebar ul li a');
+    const currentPath = window.location.pathname.split('/').pop();
+
+    links.forEach(link => {
+        const linkPath = link.getAttribute('href').split('/').pop();
+        if (linkPath === currentPath) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
         }
     });
 }
@@ -471,20 +449,6 @@ document.getElementById('logout-link').addEventListener('click', (event) => {
     event.preventDefault();
     logout();
 });
-
-function highlightActiveLink() {
-    const links = document.querySelectorAll('.sidebar ul li a');
-    const currentPath = window.location.pathname.split('/').pop();
-
-    links.forEach(link => {
-        const linkPath = link.getAttribute('href').split('/').pop();
-        if (linkPath === currentPath) {
-            link.classList.add('active');
-        } else {
-            link.classList.remove('active');
-        }
-    });
-}
 
 updateNavLinks();
 renderOwnerCars();

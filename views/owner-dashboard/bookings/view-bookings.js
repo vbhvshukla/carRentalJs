@@ -25,7 +25,7 @@ async function updateNavLinks() {
         logoutLink.style.display = 'none';
     }
 }
-
+//Get all the bookings and filter by userId
 async function getBookings() {
     try {
         const bookings = await getAllItems("bookings");
@@ -37,6 +37,7 @@ async function getBookings() {
     }
 }
 
+//Function create the booking's card
 function createBookingCard(booking) {
     const card = document.createElement("div");
     card.className = "car-card";
@@ -67,7 +68,7 @@ function createBookingCard(booking) {
 
     return card;
 }
-
+//Render the biddings
 async function renderBookings() {
     const bookings = await getBookings();
     const bookingsContainer = document.getElementById("bookings-container");

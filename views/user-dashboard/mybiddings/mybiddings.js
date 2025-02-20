@@ -44,13 +44,13 @@ function renderBiddings(biddings) {
     const tableBody = document.querySelector("#bidding-table tbody");
     const noBiddingsRow = document.getElementById("no-biddings-row");
     tableBody.innerHTML = "";
-    console.log(biddings.length);
+    // console.log(biddings.length);
     if (biddings.length === 0) {
         console.log("getting in here");
         console.log(noBiddingsRow);
-        noBiddingsRow.style.display = "table-row";
+        // noBiddingsRow.style.display = "table-row";
     } else {
-        noBiddingsRow.style.display = "none";
+        // noBiddingsRow.style.display = "none";
         biddings.forEach(bid => {
             const chatId = `${userId}_${bid.car.owner.userId}_${bid.car.carId}`;
             const statusClass = bid.status.toLowerCase();
@@ -61,18 +61,16 @@ function renderBiddings(biddings) {
                 "cancelled": "❌ Cancelled"
             }[bid.status.toLowerCase()] || bid.status;
 
-            const rentalTypeLabel = bid.rentalType === "local" ? "Local Rental" : "Outstation Rental";
+            const rentalTypeLabel = bid.rentalType === "local" ? "Local" : "Outstation";
 
             const startDate = new Date(bid.fromTimestamp);
             const endDate = new Date(bid.toTimestamp);
-            const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-            const totalAmount = (days * bid.bidAmount).toFixed(2);
-
+            const totalAmount = calculateTotalAmount(bid,startDate,endDate).toFixed(2);
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${bid.car.carName}</td>
                 <td>${bid.car.owner.username}</td>
-                <td>₹${bid.bidAmount} / day</td>
+                <td>₹${bid.bidAmount}</td>
                 <td>${bid.fromTimestamp}</td>
                 <td>${bid.toTimestamp}</td>
                 <td>${new Date(bid.createdAt).toLocaleDateString()}</td>
@@ -91,20 +89,45 @@ function renderBiddings(biddings) {
 
 function filterByStatus() {
     const selectedStatus = document.getElementById("status-sort").value;
+    console.log(selectedStatus);
     const filteredBids = selectedStatus
         ? biddings.filter(bid => bid.status.toLowerCase() === selectedStatus)
         : [...biddings];
     renderBiddings(filteredBids);
 }
 
+//Calculate the total amount for a bid based on rental type and duration.
+function calculateTotalAmount(bid, fromDate, toDate) {
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    const diffTime = Math.abs(to - from);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) ;
+
+    if (bid.rentalType === "local") {
+        const totalHours = diffTime / (1000 * 60 * 60);
+        const baseFare = bid.car.rentalOptions.local.pricePerHour * totalHours;
+        const extraKmCharges = bid.extraKmCharges || 0;
+        const extraHourCharges = bid.extraHourCharges || 0;
+        return baseFare + extraKmCharges + extraHourCharges;
+    } else if (bid.rentalType === "outstation") {
+        const baseFare = bid.car.rentalOptions.outstation.pricePerDay * diffDays;
+        const extraKmCharges = bid.extraKmCharges || 0;
+        const extraDayCharges = bid.extraDayCharges || 0;
+        return baseFare + extraKmCharges + extraDayCharges;
+    }
+    return 0;
+}
+//Filter function to filter by rental type
 function filterByRentalType() {
     const selectedRentalType = document.getElementById("rental-type-sort").value;
+    console.log(selectedRentalType);
     const filteredBids = selectedRentalType
         ? biddings.filter(bid => bid.rentalType === selectedRentalType)
         : [...biddings];
     renderBiddings(filteredBids);
 }
 
+//Cancel bid 
 async function cancelBid(bidId) {
     if (confirm("Are you sure you want to cancel this bid?")) {
         try {
@@ -162,16 +185,15 @@ function logout() {
     }
     window.location.href = "../../index.html";
 }
-document.addEventListener("DOMContentLoaded", () => {
-    loadBiddingHistory();
-    updateNavLinks();
-    highlightActiveLink();
-    window.redirectToChat = redirectToChat;
-    window.cancelBid = cancelBid;
-    window.filterByStatus = filterByStatus;
-    window.filterByRentalType = filterByRentalType;
-    document.getElementById('logout-link').addEventListener('click', (event) => {
-        event.preventDefault();
-        logout();
-    });
+
+loadBiddingHistory();
+updateNavLinks();
+highlightActiveLink();
+window.redirectToChat = redirectToChat;
+window.cancelBid = cancelBid;
+window.filterByStatus = filterByStatus;
+window.filterByRentalType = filterByRentalType;
+document.getElementById('logout-link').addEventListener('click', (event) => {
+    event.preventDefault();
+    logout();
 });

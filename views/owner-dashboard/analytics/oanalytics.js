@@ -14,7 +14,7 @@ if (!user || user.role !== "owner" || !user.isApproved) {
 
 let chartInstances = {};
 let chartData = {};
-
+//Initialize the analytics and get all the required info
 async function initAnalytics() {
     const userId = getCookie("userId");
     const days = parseInt(document.getElementById("time-range").value, 10);
@@ -33,13 +33,13 @@ async function initAnalytics() {
         setupLazyLoading();
     });
 }
-
+//Total Cars,Total Biddings, Total Bookings
 function displayTotals({ bookings, bids, cars }) {
     document.getElementById("totalCarsCount").textContent = cars.length;
     document.getElementById("totalBiddingsCount").textContent = bids.length;
     document.getElementById("totalBookingsCount").textContent = bookings.length;
 }
-
+//Setup lazy loading
 function setupLazyLoading() {
     const chartContainers = document.querySelectorAll(".chart-container");
     const observer = new IntersectionObserver((entries, observer) => {
@@ -55,7 +55,7 @@ function setupLazyLoading() {
 
     chartContainers.forEach(container => observer.observe(container));
 }
-
+//Common function to generate all the charts.
 function generateChart(chartId, data) {
     switch (chartId) {
         case "topBookedCarsChart":
@@ -114,6 +114,7 @@ function generateChart(chartId, data) {
     }
 }
 
+//Create chart function
 function createChart(id, type, data, title) {
     const ctx = document.getElementById(id).getContext("2d");
 
@@ -162,6 +163,7 @@ function createChart(id, type, data, title) {
                     y: {
                         grid: { display: true, color: "rgba(200,200,200,0.2)" },
                         ticks: { beginAtZero: true, stepSize: 1, precision: 0 },
+                        suggestedMax: 10,
                     },
                 } : {}
             },
@@ -169,50 +171,57 @@ function createChart(id, type, data, title) {
     }
 }
 
+//Top booked cars
 function getTopBookedCars(bookings) {
     const counts = {};
     bookings.forEach(b => counts[b.bid.car.carName] = (counts[b.bid.car.carName] || 0) + 1);
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
-    return { labels: sorted.map(c => c[0]), datasets: [{ label: "Bookings", data: sorted.map(c => c[1]), backgroundColor: "blue" }] };
+    return { labels: sorted.map(c => c[0]), datasets: [{ label: "Bookings", data: sorted.map(c => c[1]), backgroundColor: "#3498db" }] };
 }
 
+//Bookings over time
 function getBookingsOverTime(bookings) {
     const counts = {};
     bookings.forEach(b => {
         const date = new Date(b.createdAt).toISOString().split("T")[0];
         counts[date] = (counts[date] || 0) + 1;
     });
-    return { labels: Object.keys(counts), datasets: [{ label: "Bookings", data: Object.values(counts), borderColor: "green", fill: false }] };
+    return { labels: Object.keys(counts), datasets: [{ label: "Bookings", data: Object.values(counts), borderColor: "#1abc9c", fill: false }] };
 }
 
+//Revenue over months
 function getRevenueOverMonths(bookings) {
     const revenue = {};
     bookings.forEach(b => {
         const month = new Date(b.createdAt).toISOString().slice(0, 7);
-        revenue[month] = (revenue[month] || 0) + b.bid.bidAmount;
+        revenue[month] = (revenue[month] || 0) + b.totalFare;
     });
-    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue (₹)", data: Object.values(revenue), backgroundColor: "purple" }] };
+    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue (₹)", data: Object.values(revenue), backgroundColor: "#9b59b6" }] };
 }
 
+//Bid amounts over time
 function getBidAmountOverTime(bids) {
     const amounts = {};
     bids.forEach(b => {
         const date = new Date(b.createdAt).toISOString().split("T")[0];
         amounts[date] = (amounts[date] || 0) + b.bidAmount;
     });
-    return { labels: Object.keys(amounts), datasets: [{ label: "Bid Amount ($)", data: Object.values(amounts), borderColor: "red", fill: false }] };
+    return { labels: Object.keys(amounts), datasets: [{ label: "Bid Amount ($)", data: Object.values(amounts), borderColor: "#e74c3c", fill: false }] };
 }
 
+//Bids vs bookings
 function getBidsVsBookings(bids, bookings) {
-    return { labels: ["Bids", "Bookings"], datasets: [{ label: "Count", data: [bids.length, bookings.length], backgroundColor: ["blue", "green"] }] };
+    return { labels: ["Bids", "Bookings"], datasets: [{ label: "Count", data: [bids.length, bookings.length], backgroundColor: ["#3498db", "#2ecc71"] }] };
 }
 
+//Popular car categories
 function getPopularCarCategories(cars) {
     const data = {};
     cars.forEach(c => data[c.category.categoryName] = (data[c.category.categoryName] || 0) + 1);
-    return { labels: Object.keys(data), datasets: [{ label: "Cars", data: Object.values(data), backgroundColor: "orange" }] };
+    return { labels: Object.keys(data), datasets: [{ label: "Cars", data: Object.values(data), backgroundColor: "#e67e22" }] };
 }
 
+//Avg bid amount per car
 function getAvgBidAmountPerCar(bids) {
     const data = {};
     bids.forEach(b => {
@@ -224,9 +233,10 @@ function getAvgBidAmountPerCar(bids) {
     const carNames = Object.keys(data);
     const avgBids = carNames.map(c => data[c].total / data[c].count);
 
-    return { labels: carNames, datasets: [{ label: "Avg. Bid Amount ($)", data: avgBids, backgroundColor: "brown" }] };
+    return { labels: carNames, datasets: [{ label: "Avg. Bid Amount ($)", data: avgBids, backgroundColor: "#16a085" }] };
 }
 
+//Most active renters
 function getMostActiveRenters(bookings) {
     const data = {};
     bookings.forEach(b => data[b.bid.user.username] = (data[b.bid.user.username] || 0) + 1);
@@ -234,41 +244,48 @@ function getMostActiveRenters(bookings) {
     return { labels: Object.keys(data), datasets: [{ label: "Bookings", data: Object.values(data), backgroundColor: "pink" }] };
 }
 
+//Total revenue over time
 function getTotalRevenueOverTime(bookings, bids) {
     const revenue = {};
     bookings.forEach(b => {
         const date = new Date(b.createdAt).toISOString().split("T")[0];
-        revenue[date] = (revenue[date] || 0) + b.bid.bidAmount;
+        revenue[date] = (revenue[date] || 0) + b.totalFare;
     });
     bids.forEach(b => {
         const date = new Date(b.createdAt).toISOString().split("T")[0];
         revenue[date] = (revenue[date] || 0) + b.bidAmount;
     });
-    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue (₹)", data: Object.values(revenue), borderColor: "blue", fill: false }] };
+    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue (₹)", data: Object.values(revenue), borderColor: "#27ae60", fill: false }] };
 }
 
+//Avg revenue per car
 function getAvgRevenuePerCar(bookings) {
     const revenue = {};
+    const counts = {};
     bookings.forEach(b => {
-        revenue[b.bid.car.carName] = (revenue[b.bid.car.carName] || 0) + b.bid.bidAmount;
+        const carName = b.bid.car.carName;
+        revenue[carName] = (revenue[carName] || 0) + b.totalFare;
+        counts[carName] = (counts[carName] || 0) + 1;
     });
     const carNames = Object.keys(revenue);
-    const avgRevenue = carNames.map(car => revenue[car]);
-    return { labels: carNames, datasets: [{ label: "Avg. Revenue (₹)", data: avgRevenue, backgroundColor: "green" }] };
+    const avgRevenue = carNames.map(car => revenue[car] / counts[car]);
+    return { labels: carNames, datasets: [{ label: "Avg. Revenue (₹)", data: avgRevenue, backgroundColor: "#27ae60" }] };
 }
 
+//Revenue by rental types
 function getRevenueByRentalType(bookings) {
     const revenue = { local: 0, outstation: 0 };
     bookings.forEach(b => {
         if (b.rentalType === "local") {
-            revenue.local += b.bid.bidAmount;
+            revenue.local += b.totalFare;
         } else if (b.rentalType === "outstation") {
-            revenue.outstation += b.bid.bidAmount;
+            revenue.outstation += b.totalFare;
         }
     });
-    return { labels: ["Local", "Outstation"], datasets: [{ label: "Revenue (₹)", data: [revenue.local, revenue.outstation], backgroundColor: ["blue", "green"] }] };
+    return { labels: ["Local", "Outstation"], datasets: [{ label: "Revenue (₹)", data: [revenue.local, revenue.outstation], backgroundColor: ["#2a5298", "#27ae60"] }] };
 }
 
+//Avg rental duration
 function getAvgRentalDuration(bookings) {
     const durations = { local: 0, outstation: 0 };
     const counts = { local: 0, outstation: 0 };
@@ -285,9 +302,10 @@ function getAvgRentalDuration(bookings) {
             counts.outstation += 1;
         }
     });
-    return { labels: ["Local", "Outstation"], datasets: [{ label: "Avg. Duration (days)", data: [durations.local / counts.local, durations.outstation / counts.outstation], backgroundColor: ["purple", "orange"] }] };
+    return { labels: ["Local", "Outstation"], datasets: [{ label: "Avg. Duration (days)", data: [durations.local / counts.local, durations.outstation / counts.outstation], backgroundColor: ["#8e44ad", "#d35400"] }] };
 }
 
+//Popular rental types
 function getPopularRentalType(bookings) {
     const counts = { local: 0, outstation: 0 };
     bookings.forEach(b => {
@@ -297,18 +315,21 @@ function getPopularRentalType(bookings) {
             counts.outstation += 1;
         }
     });
-    return { labels: ["Local", "Outstation"], datasets: [{ label: "Count", data: [counts.local, counts.outstation], backgroundColor: ["blue", "green"] }] };
+    return { labels: ["Local", "Outstation"], datasets: [{ label: "Count", data: [counts.local, counts.outstation], backgroundColor: ["#3498db", "#2ecc71"] }] };
 }
 
+
+//Revenue per city
 function getRevenueByCity(bookings) {
     const revenue = {};
     bookings.forEach(b => {
         const city = b.bid.car.city;
-        revenue[city] = (revenue[city] || 0) + b.bid.bidAmount;
+        revenue[city] = (revenue[city] || 0) + b.totalFare;
     });
-    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue (₹)", data: Object.values(revenue), backgroundColor: "red" }] };
+    return { labels: Object.keys(revenue), datasets: [{ label: "Revenue (₹)", data: Object.values(revenue), backgroundColor: "#e74c3c" }] };
 }
 
+//Utilization rate -> the duration from the creation date and the booked duration
 function getCarUtilizationRate(bookings, cars) {
     const utilization = {};
     cars.forEach(car => {
@@ -316,22 +337,20 @@ function getCarUtilizationRate(bookings, cars) {
     });
     bookings.forEach(b => {
         const carName = b.bid.car.carName;
-        const fromDate = new Date(b.fromTimestamp);
-        const toDate = new Date(b.toTimestamp);
-        const diffTime = Math.abs(toDate - fromDate);
+        const from = new Date(b.fromTimestamp);
+        const to = new Date(b.toTimestamp);
+        const diffTime = Math.abs(to - from);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         utilization[carName].bookedDays += diffDays;
     });
     cars.forEach(car => {
-        const createdAt = new Date(car.createdAt);
-        const today = new Date();
-        const diffTime = Math.abs(today - createdAt);
+        const from = new Date(car.createdAt);
+        const to = new Date();
+        const diffTime = Math.abs(to - from);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         utilization[car.carName].totalDays = diffDays;
     });
-    const carNames = Object.keys(utilization);
-    const utilizationRates = carNames.map(car => (utilization[car].bookedDays / utilization[car].totalDays) * 100);
-    return { labels: carNames, datasets: [{ label: "Utilization Rate (%)", data: utilizationRates, backgroundColor: "yellow" }] };
+    return { labels: Object.keys(utilization), datasets: [{ label: "Utilization Rate (%)", data: Object.values(utilization).map(u => (u.bookedDays / u.totalDays) * 100), backgroundColor: "#2a5298" }] };
 }
 
 async function updateNavLinks() {
@@ -370,13 +389,13 @@ function highlightActiveLink() {
 function getBidAcceptanceRate(bids) {
     const total = bids.length;
     const accepted = bids.filter(b => b.status === "accepted").length;
-    return { labels: ["Accepted", "Rejected"], datasets: [{ data: [accepted, total - accepted], backgroundColor: ["green", "red"] }] };
+    return { labels: ["Accepted", "Rejected"], datasets: [{ data: [accepted, total - accepted], backgroundColor: ["#27ae60", "#c0392b"] }] };
 }
 
 function getCarsPerCity(cars) {
     const data = {};
     cars.forEach(c => data[c.city] = (data[c.city] || 0) + 1);
-    return { labels: Object.keys(data), datasets: [{ label: "Cars", data: Object.values(data), backgroundColor: ["blue", "orange", "yellow", "pink"] }] };
+    return { labels: Object.keys(data), datasets: [{ label: "Cars", data: Object.values(data), backgroundColor: ["#27ae60", "#f39c12", "#f1c40f", "pink"] }] };
 }
 
 function logout() {

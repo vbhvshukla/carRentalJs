@@ -3,26 +3,7 @@ import { checkAuth, getUser, checkOwnerApproved } from "../../js/utils/auth.js";
 import { getCookie,setCookie } from "../../js/utils/cookie.js";
 import { generateRandomId } from "../../js/utils/generateId.js";
 
-function logout() {
-    const cookies = document.cookie.split("; ");
-    for (let i = 0; i < cookies.length; i++) {
-        const [name] = cookies[i].split("=");
-        setCookie(name, "", -1); 
-    }
-    window.location.href = "../index.html";
-}
-
-const userId = getCookie("userId");
-if (!userId) {
-    window.location.href = "../login/login.html";
-}
-
-const user = await getItemByKey("users", userId);
-
-if (!user || user.role !== "owner" || !user.isApproved) {
-    alert("Access Denied: You are not authorized to view this page.");
-    window.location.href = user.role === "customer" ? "../user-dashboard/udashboard.html" : "../login/login.html";
-}
+// Update navigation links based on authentication status.
 
 async function updateNavLinks() {
     const isAuthenticated = await checkAuth();
@@ -38,6 +19,7 @@ async function updateNavLinks() {
     }
 }
 
+//Calculate the total amount for a bid based on rental type and duration.
 function calculateTotalAmount(bid, fromDate, toDate) {
     const from = new Date(fromDate);
     const to = new Date(toDate);
@@ -59,15 +41,18 @@ function calculateTotalAmount(bid, fromDate, toDate) {
     return 0;
 }
 
+//Check if two date ranges overlap
 function isDateRangeOverlap(startDate1, endDate1, startDate2, endDate2) {
     return (startDate1 <= endDate2 && endDate1 >= startDate2);
 }
 
+//Get all pending bids for the current user
 async function getPendingBids() {
     const bids = await getAllItems("bids");
     return bids.filter(bid => bid.status.toLowerCase() === "pending" && bid.car.owner.userId === userId);
 }
 
+//Accept a bid and update the status of overlapping bids
 async function acceptBid(acceptedBid) {
     try {
         const bids = await getPendingBids();
@@ -166,6 +151,7 @@ async function acceptBid(acceptedBid) {
     }
 }
 
+//Reject a bid by updating its status
 async function rejectBid(bidId) {
     try {
         const bid = await getItemByKey("bids", bidId);
@@ -183,6 +169,8 @@ let pendingBids = [], bookings = [], allBids = [];
 let currentPendingPage = 1, currentBookingsPage = 1, currentAllBidsPage = 1;
 const itemsPerPage = 5;
 
+//Fetch data for pending bids,bookings and all bids
+
 async function fetchData() {
     pendingBids = await getPendingBids();
     bookings = await getAllItems("bookings");
@@ -195,6 +183,7 @@ async function fetchData() {
     renderAllBids();
 }
 
+//Render pending bids in the table
 async function renderPendingBids() {
     const tableBody = document.querySelector("#pending-bids-table tbody");
     tableBody.innerHTML = "";
@@ -247,6 +236,7 @@ async function renderPendingBids() {
     togglePaginationButtons("pending-pagination", currentPendingPage, pendingBids.length);
 }
 
+//Render bookings in the table
 async function renderBookings() {
     const tableBody = document.querySelector("#bookings-table tbody");
     tableBody.innerHTML = "";
@@ -300,6 +290,7 @@ async function renderBookings() {
     document.getElementById("bookings-page-info").textContent = `Page ${currentBookingsPage} of ${Math.ceil(bookings.length / itemsPerPage)}`;
 }
 
+//Render all bids in the table
 async function renderAllBids() {
     const tableBody = document.querySelector("#all-bids-table tbody");
     tableBody.innerHTML = "";
@@ -334,6 +325,7 @@ async function renderAllBids() {
     togglePaginationButtons("all-bids-pagination", currentAllBidsPage, allBids.length);
 }
 
+// Toggle pagination buttons based on the current page and total items
 function togglePaginationButtons(paginationId, currentPage, totalItems) {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const paginationControls = document.getElementById(paginationId);
@@ -350,6 +342,7 @@ function togglePaginationButtons(paginationId, currentPage, totalItems) {
     }
 }
 
+// Highlight the active link in the sidebar
 function highlightActiveLink() {
     const links = document.querySelectorAll('.sidebar ul li a');
     const currentPath = window.location.pathname.split('/').pop();
@@ -364,6 +357,8 @@ function highlightActiveLink() {
     });
 }
 
+// Event listeners for pagination buttons
+
 document.getElementById("prev-pending").addEventListener("click", () => { if (currentPendingPage > 1) currentPendingPage--; renderPendingBids(); });
 document.getElementById("next-pending").addEventListener("click", () => { if (currentPendingPage < Math.ceil(pendingBids.length / itemsPerPage)) currentPendingPage++; renderPendingBids(); });
 document.getElementById("prev-bookings").addEventListener("click", () => { if (currentBookingsPage > 1) currentBookingsPage--; renderBookings(); });
@@ -371,6 +366,7 @@ document.getElementById("next-bookings").addEventListener("click", () => { if (c
 document.getElementById("prev-all-bids").addEventListener("click", () => { if (currentAllBidsPage > 1) currentAllBidsPage--; renderAllBids(); });
 document.getElementById("next-all-bids").addEventListener("click", () => { if (currentAllBidsPage < Math.ceil(allBids.length / itemsPerPage)) currentAllBidsPage++; renderAllBids(); });
 
+// Event listener for sorting bids by status
 document.getElementById("status-sort").addEventListener("change", async (event) => {
     allBids = await getAllItemsByIndex("bids", "ownerId", userId);
     const status = event.target.value.toLowerCase();
@@ -382,6 +378,8 @@ document.getElementById("status-sort").addEventListener("change", async (event) 
     currentAllBidsPage = 1;
     renderAllBids();
 });
+
+// Event listener for sorting bookings by rental type
 document.getElementById("rental-type-sort-bookings").addEventListener("change", async (event) => {
     const rentalType = event.target.value.toLowerCase();
     if (rentalType === "all") {
@@ -394,6 +392,7 @@ document.getElementById("rental-type-sort-bookings").addEventListener("change", 
     renderBookings();
 });
 
+// Event listener for sorting pending bids by rental type
 document.getElementById("rental-type-sort-pending").addEventListener("change", async (event) => {
     const rentalType = event.target.value.toLowerCase();
     if (rentalType === "all") {
@@ -405,30 +404,26 @@ document.getElementById("rental-type-sort-pending").addEventListener("change", a
     currentPendingPage = 1;
     renderPendingBids();
 });
-
 document.getElementById('logout-link').addEventListener('click', (event) => {
     event.preventDefault();
     logout();
 });
-
 function isBookingOver(toDate) {
     const now = new Date();
     return new Date(toDate) < now;
 }
-
 function renderExtraChargesButton(bookingId) {
     return `<button class="extra-charges-btn" data-booking-id="${bookingId}">Add Extra Charges</button>`;
 }
-
 async function updateFare(bookingId) {
     const booking = bookings.find(b => b.bookingId === bookingId);
     const extraKm = parseFloat(document.getElementById("extraKm").value) || 0;
     const extraHours = parseFloat(document.getElementById("extraHours").value) || 0;
     const extraDays = parseFloat(document.getElementById("extraDays").value) || 0;
 
-    console.log("extraKm:", extraKm);
-    console.log("extraHours:", extraHours);
-    console.log("extraDays:", extraDays);
+    // console.log("extraKm:", extraKm);
+    // console.log("extraHours:", extraHours);
+    // console.log("extraDays:", extraDays);
 
     let extraDayCharges = 0;
 
@@ -455,18 +450,10 @@ async function updateFare(bookingId) {
             booking.extraKmCharges += (extraKm - maxKmLimit) * booking.bid.car.rentalOptions.outstation.extraKmRate;
         }
     }
-
-    console.log("extraKmCharges:", booking.extraKmCharges);
-    console.log("extraHourCharges:", booking.extraHourCharges);
-    console.log("extraDayCharges:", extraDayCharges);
-
     const baseFare = calculateTotalAmount(booking.bid, booking.fromTimestamp, booking.toTimestamp);
-    console.log("baseFare:", baseFare);
-
     booking.totalFare = baseFare + (booking.extraKmCharges || 0) + (booking.extraHourCharges || 0) + extraDayCharges;
-    console.log("totalFare:", booking.totalFare);
-
-    // Ensure all required fields are present and correctly formatted
+    // console.log("totalFare:", booking.totalFare);
+    // Ensure here that all required fields are present and correctly formatted
     const updatedBooking = {
         bookingId: booking.bookingId,
         fromTimestamp: booking.fromTimestamp,
@@ -496,6 +483,28 @@ document.getElementById("extra-charges-form").addEventListener("submit", async (
 document.querySelector(".close").addEventListener("click", () => {
     document.getElementById("extra-charges-modal").style.display = "none";
 });
+
+function logout() {
+    const cookies = document.cookie.split("; ");
+    for (let i = 0; i < cookies.length; i++) {
+        const [name] = cookies[i].split("=");
+        setCookie(name, "", -1); 
+    }
+    window.location.href = "../index.html";
+}
+
+const userId = getCookie("userId");
+if (!userId) {
+    window.location.href = "../login/login.html";
+}
+
+const user = await getItemByKey("users", userId);
+
+if (!user || user.role !== "owner" || !user.isApproved) {
+    alert("Access Denied: You are not authorized to view this page.");
+    window.location.href = user.role === "customer" ? "../user-dashboard/udashboard.html" : "../login/login.html";
+}
+
 
 highlightActiveLink();
 fetchData();

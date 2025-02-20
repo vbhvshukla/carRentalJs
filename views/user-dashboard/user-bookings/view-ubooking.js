@@ -1,6 +1,6 @@
 import { getItemsWithPagination, getAllItemsByIndex, getItemByKey, updateItem, deleteItem, getTotalItems } from "../../../js/utils/dbUtils.js";
-import { getCookie } from "../../../js/utils/cookie.js";
-import { checkAuth, logout ,checkOwner} from "../../../js/utils/auth.js";
+import { getCookie,setCookie } from "../../../js/utils/cookie.js";
+import { checkAuth, checkOwner } from "../../../js/utils/auth.js";
 import { showToast } from "../../../js/utils/toastUtils.js";
 
 const userId = getCookie("userId");
@@ -33,7 +33,8 @@ window.sortBookings = function (column) {
 
     loadUserBookings();
 }
-//Apply the fitlers
+
+// Apply the filters
 window.applyFilters = function () {
     const filters = {
         searchCar: document.getElementById("search-car").value,
@@ -43,7 +44,8 @@ window.applyFilters = function () {
     };
     loadUserBookings(1, filters);
 }
-//Get the filters 
+
+// Get the filters
 function applyFilterConditions(booking, filters) {
     if (filters.searchCar && !booking.car.carName.toLowerCase().includes(filters.searchCar.toLowerCase())) return false;
     if (filters.startDate && new Date(booking.from) < new Date(filters.startDate)) return false;
@@ -62,7 +64,8 @@ function applyFilterConditions(booking, filters) {
 
     return true;
 }
-//Pagination
+
+// Pagination
 function updatePaginationControls(currentPage, totalItems) {
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     const paginationControls = document.getElementById("pagination-controls");
@@ -95,7 +98,33 @@ function highlightActiveLink() {
         }
     });
 }
-//Soft cancel the booking
+
+// Calculate the total amount for a booking based on rental type and duration.
+function calculateTotalAmount(booking, fromDate, toDate) {
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    const diffTime = Math.abs(to - from);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    const bid = booking.bid;
+    const baseFare = bid.bidAmount;
+
+    if (bid.rentalType === "local") {
+        const totalHours = diffTime / (1000 * 60 * 60);
+        const totalBaseFare = baseFare * totalHours;
+        const extraKmCharges = booking.extraKmCharges || 0;
+        const extraHourCharges = booking.extraHourCharges || 0;
+        return totalBaseFare + extraKmCharges + extraHourCharges;
+    } else if (bid.rentalType === "outstation") {
+        const totalBaseFare = baseFare * diffDays;
+        const extraKmCharges = booking.extraKmCharges || 0;
+        const extraDayCharges = booking.extraDayCharges || 0;
+        return totalBaseFare + extraKmCharges + extraDayCharges;
+    }
+    return 0;
+}
+
+// Soft cancel the booking
 async function cancelBooking(bookingId) {
     if (confirm("Are you sure you want to cancel this booking?")) {
         try {
@@ -155,15 +184,7 @@ async function loadUserBookings(page = 1, filters = {}) {
     filteredBookings.forEach(booking => {
         const fromDate = new Date(booking.fromTimestamp);
         const toDate = new Date(booking.toTimestamp);
-        const diffTime = Math.abs(toDate - fromDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-        if (booking.rentalType === "local") {
-            const totalHours = diffTime / (1000 * 60 * 60);
-            booking.totalAmount = booking.bid.car.rentalOptions.local.pricePerHour * totalHours + booking.extraKmCharges + booking.extraHourCharges;
-        } else if (booking.rentalType === "outstation") {
-            booking.totalAmount = booking.bid.car.rentalOptions.outstation.pricePerDay * diffDays + booking.extraKmCharges + booking.extraHourCharges;
-        }
+        booking.totalAmount = calculateTotalAmount(booking, fromDate, toDate);
     });
 
     // Apply sorting
@@ -204,11 +225,11 @@ async function loadUserBookings(page = 1, filters = {}) {
                 <td>${booking.bookingId}</td>
                 <td>${booking.bid.car.carName}</td>
                 <td>${booking.bid.car.owner.username}</td>
-                <td>$${booking.bid.bidAmount}</td>
+                <td>₹${booking.bid.bidAmount}</td>
                 <td>${booking.fromTimestamp}</td>
                 <td>${booking.toTimestamp}</td>
                 <td>${new Date(booking.createdAt).toLocaleDateString()}</td>
-                <td>$${booking.totalAmount.toFixed(2)}</td>
+                <td>₹${booking.totalFare}</td>
                 <td>
                     <button class="chat-button" onclick="redirectToChat('${chatId}')">Chat</button>
                     <button class="cancel-button" onclick="cancelBooking('${booking.bookingId}')">Cancel</button>
@@ -223,14 +244,16 @@ async function loadUserBookings(page = 1, filters = {}) {
     const totalItems = await getTotalItems("bookings");
     updatePaginationControls(page, totalItems);
 }
-//Open the modal
+
+// Open the modal
 function openRatingModal(carId, carName) {
     const modal = document.getElementById("rating-modal");
     document.getElementById("modal-car-name").textContent = carName;
     modal.setAttribute("data-car-id", carId);
     modal.classList.remove("hidden");
 }
-//Submit the rating 
+
+// Submit the rating
 document.getElementById("submit-rating").addEventListener("click", async () => {
     const carId = document.getElementById("rating-modal").getAttribute("data-car-id");
     const rating = parseFloat(document.getElementById("user-rating").value);
@@ -265,6 +288,15 @@ document.getElementById('logout-link').addEventListener('click', (event) => {
     event.preventDefault();
     logout();
 });
+
+function logout() {
+    const cookies = document.cookie.split("; ");
+    for (let i = 0; i < cookies.length; i++) {
+        const [name] = cookies[i].split("=");
+        setCookie(name, "", -1); 
+    }
+    window.location.href = "../../index.html";
+}
 
 loadUserBookings();
 updateNavLinks();

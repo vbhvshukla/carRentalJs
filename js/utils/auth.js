@@ -6,6 +6,7 @@ function checkAuth() {
     return !!userId;
 }
 
+//Get user's role
 async function getUserRole() {
     const userId = getCookie("userId");
     if (!userId) return null;
@@ -13,12 +14,14 @@ async function getUserRole() {
     return user ? user.role : null;
 }
 
+//Get the current logged in user's object.
 async function getUser() {
     const userId = getCookie("userId");
     if (!userId) return null;
     return await getItemByKey("users", userId);
 }
 
+//Logout function
 function logout() {
     const cookies = document.cookie.split("; ");
     for (let i = 0; i < cookies.length; i++) {
@@ -28,21 +31,25 @@ function logout() {
     window.location.href = "../index.html";
 }
 
+//Check the status of role if the user is admin
 async function checkAdmin() {
     const role = await getUserRole();
     return role === "admin";
 }
 
+//Check if owner is approved
 async function checkOwnerApproved() {
     const user = await getUser();
     return user && user.role === "owner" && user.isApproved;
 }
 
+//Check if the user is an owner
 async function checkOwner() {
     const role = await getUserRole();
     return role === "owner";
 }
 
+//Check if the user is a customer
 async function checkCustomer() {
     const role = await getUserRole();
     return role === "customer";

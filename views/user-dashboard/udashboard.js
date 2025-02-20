@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("username").value = user.username;
         document.getElementById("email").value = user.email;
         document.getElementById("avgRating").textContent = user.avgRating || "N/A";
-        document.getElementById("ratingCount").textContent = user.ratingCoun || "N/A";
+        document.getElementById("ratingCount").textContent = user.ratingCount || "N/A";
 
         if (user.verificationFile) {
             document.getElementById("verificationFile").innerHTML =
@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("old-password-error").textContent = "Incorrect old password.";
         }
     });
-
+//Update the password
     document.getElementById("update-password").addEventListener("click", async () => {
         const newPassword = document.getElementById("new-password").value;
         if (!validateNewPassword(newPassword)) return;

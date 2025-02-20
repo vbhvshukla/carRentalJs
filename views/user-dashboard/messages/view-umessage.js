@@ -6,17 +6,21 @@ import { checkAuth, logout ,checkOwner} from "../../../js/utils/auth.js";
 const userId = getCookie("userId");
 if (!userId) window.location.href = "../../login/login.html";
 
+
+//Fetch the chatId from the URL
 function getChatIdFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const chatId = urlParams.get('chatId');
     return chatId;
 }
 
+//Fetch the car from the car id
 function getCarIdFromChatId(chatId) {
     const parts = chatId.split('_');
     return parts[parts.length - 1];
 }
 
+//Send message function
 async function sendMessage(chatId, fromUserId, toUserId, message, file = null) {
     const fromUser = await getItemByKey("users", fromUserId);
     const toUser = await getItemByKey("users", toUserId);
@@ -64,6 +68,7 @@ async function sendMessage(chatId, fromUserId, toUserId, message, file = null) {
     await updateItem("conversations", conversation);
 }
 
+//Render all message
 async function renderChatMessages() {
     const chatId = getChatIdFromURL();
     console.log(chatId);

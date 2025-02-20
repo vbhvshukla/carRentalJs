@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
             validateInput(passwordInput, formRules.password, passwordError);
     });
 
+    //Login Form
+
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 

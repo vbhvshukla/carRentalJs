@@ -21,7 +21,7 @@ function readFileAsDataURL(file) {
         reader.readAsDataURL(file);
     });
 }
-
+//Render car details
 async function renderCarDetails() {
     const totalPriceDiv = document.getElementById("total-price-container");
     totalPriceDiv.style.display = "none";
@@ -96,7 +96,10 @@ async function renderCarDetails() {
 
 
         // Validate each field individually
-        if (!startDate) {
+        if (rentalType === "local" && (new Date(endDate) - new Date(startDate)) < 60 * 60 * 1000) {
+            showToast("Local rentals must be booked for at least 1 hour.", "error");
+            return;
+        }        if (!startDate) {
             showToast("Start date is required.", "error");
             return;
         }
@@ -229,7 +232,6 @@ async function renderCarDetails() {
             document.getElementById('total-price').textContent = totalBidAmount.toFixed(2);
             totalPriceDiv.style.display = "block";
             priceBreakupDiv.innerHTML = `
-                <p>Base ${rentalType} price: ₹${basePrice.toFixed(2)}</p>
                 <p>Base total: ₹${totalPrice.toFixed(2)}</p>
                 
             `;
@@ -283,7 +285,7 @@ async function renderCarDetails() {
 
     renderChatMessages(car.owner.userId);
 }
-
+//Toggle the rental type
 function toggleRentalType(type, car) {
     const localForm = document.getElementById("local-form");
     const outstationForm = document.getElementById("outstation-form");
@@ -306,6 +308,7 @@ function toggleRentalType(type, car) {
     }
 }
 
+//Message
 async function sendMessage(chatId, fromUserId, toUserId, message, file) {
     const newMessage = {
         messageId: generateRandomId(),
@@ -347,7 +350,7 @@ async function sendMessage(chatId, fromUserId, toUserId, message, file) {
     conversation.lastTimestamp = newMessage.createdAt;
     await updateItem("conversations", conversation);
 }
-
+//Render all messages
 async function renderChatMessages(ownerId) {
     const allMessages = await getAllItemsByIndex("messages", "chatId", `${userId}_${ownerId}_${getCarIdFromURL()}`);
     const chatMessagesContainer = document.getElementById("chat-messages");
@@ -508,6 +511,46 @@ document.getElementById('start-date-outstation').addEventListener('change', func
     const endDateInput = document.getElementById('end-date-outstation');
     endDateInput.min = startDate;
 });
+
+// Function to open the modal
+function openModal() {
+    const modal = document.getElementById("info-modal");
+    modal.style.display = "block";
+}
+
+// Function to close the modal
+function closeModal() {
+    const modal = document.getElementById("info-modal");
+    modal.style.display = "none";
+}
+
+
+// Event listener for the info button
+document.getElementById("info-button").addEventListener("click", () => {
+    const carId = getCarIdFromURL();
+    getItemByKey("cars", carId).then(car => {
+        const priceInfoDiv = document.getElementById("price-info");
+        priceInfoDiv.innerHTML = `
+            <h3>Local Charges</h3>
+            <p>Price per Hour: ₹${car.rentalOptions.local.pricePerHour}</p>
+            <p>Max Km per Hour: ${car.rentalOptions.local.maxKmPerHour} km</p>
+            <p>Extra Hour Rate: ₹${car.rentalOptions.local.extraHourRate}</p>
+            <p>Extra Km Rate: ₹${car.rentalOptions.local.extraKmRate}</p>
+            <h3>Outstation Charges</h3>
+            <p>Price per Day: ₹${car.rentalOptions.outstation.pricePerDay}</p>
+            <p>Price per Km: ₹${car.rentalOptions.outstation.pricePerKm}</p>
+            <p>Minimum Km Chargeable: ${car.rentalOptions.outstation.minimumKmChargeable} km</p>
+            <p>Max Km Limit per Day: ${car.rentalOptions.outstation.maxKmLimitPerDay} km</p>
+            <p>Extra Day Rate: ₹${car.rentalOptions.outstation.extraDayRate}</p>
+            <p>Extra Hourly Rate: ₹${car.rentalOptions.outstation.extraHourlyRate}</p>
+            <p>Extra Km Rate: ₹${car.rentalOptions.outstation.extraKmRate}</p>
+        `;
+        openModal();
+    });
+});
+
+// Event listener for the close button
+document.querySelector(".close").addEventListener("click", closeModal);
 
 renderCarDetails();
 updateNavLinks();

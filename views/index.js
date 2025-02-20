@@ -1,5 +1,5 @@
 import { getAllItems, getItemByKey } from "../js/utils/dbUtils.js";
-import { checkAuth, logout,checkOwnerApproved } from "../js/utils/auth.js";
+import { checkAuth, logout, checkOwnerApproved } from "../js/utils/auth.js";
 import { getCookie } from "../js/utils/cookie.js";
 import { cities } from "../js/utils/cities.js";
 
@@ -9,11 +9,10 @@ if (userId) {
     const user = await getItemByKey("users", userId);
     // const isOwnerApproved = await checkOwnerApproved();
     if (user.role === "admin") {
-        console.log("test");
         window.location.href = "../admin/dashboard.html";
     }
-    else if(user.role==="owner"){
-        window.location.href="./owner-dashboard/odashboard.html";
+    else if (user.role === "owner") {
+        window.location.href = "./owner-dashboard/odashboard.html";
     }
 }
 
@@ -46,7 +45,6 @@ function generateStarRating(avgRating) {
 function redirectToBookingPage(carId) {
     window.location.href = `./booking/booking.html?carId=${carId}`;
 }
-
 
 //Function to dnymically create card and append it to the parent element.
 function createCarCard(car) {
@@ -246,7 +244,7 @@ async function getFilteredCars(filters) {
 
         const availabilityMatch = filters.availability
             ? (filters.availability.toLowerCase() === "local" && car.isAvailableForLocal) ||
-              (filters.availability.toLowerCase() === "outstation" && car.isAvailableForOutstation)
+            (filters.availability.toLowerCase() === "outstation" && car.isAvailableForOutstation)
             : true;
 
         const featuresMatch = filters.features.length > 0

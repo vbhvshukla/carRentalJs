@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             verificationFileInput.removeAttribute("required");
         }
     });
-
+    //For central validation
     const formRules = {
         username: { required: true, minLength: 3 },
         email: { required: true, email: true },
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         role: { required: true },
         verificationFile: { required: (value, formData) => formData.role === "owner" }
     };
-
+    //get the data from the formData validate the schema and add the item in the DB.
     registerForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         errorMessage.textContent = "";
@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             errorMessage.textContent = "Verification file is required for Owner registration!";
             return;
         }
-
+        //Hash the password before proceeding
         const hashedPassword = CryptoJS.SHA256(password).toString();
         const userId = generateRandomId();
 
@@ -98,7 +98,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             saveUser(user);
         }
     });
-
+    //Save the user
     function saveUser(user) {
         addItem("users", user)
             .then(() => {

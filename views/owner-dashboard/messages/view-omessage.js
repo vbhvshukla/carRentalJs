@@ -10,6 +10,7 @@ if (!user || user.role !== "owner" || !user.isApproved) {
     window.location.href = user.role === "customer" ? "../../user-dashboard/udashboard.html" : "../../login/login.html";
 }
 
+//Render message functionality
 async function renderMessages() {
     const urlParams = new URLSearchParams(window.location.search);
     const chatId = urlParams.get('chatId');
@@ -33,13 +34,13 @@ async function renderMessages() {
         };
         await addItem("conversations", newConversation);
     }
-
+    //Get all the messages from the chatId
     const allMessages = await getAllItemsByIndex("messages", "chatId", chatId);
     const chatMessagesContainer = document.getElementById("chat-messages");
     chatMessagesContainer.innerHTML = "";
 
     allMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
+    //Render the messages
     for (const msg of allMessages) {
         console.log(`Message from user ID: ${msg.fromUser.userId}`);
         const user = await getItemByKey("users", msg.fromUser.userId);
@@ -121,6 +122,7 @@ async function sendMessage(chatId, fromUserId, fromUsername, message, file = nul
     await updateItem("conversations", conversation);
 }
 
+//Listener for send message button
 document.getElementById("send-chat-message-btn").addEventListener("click", async () => {
     const messageInput = document.getElementById("chat-message-input");
     const fileInput = document.getElementById("chat-file-input");

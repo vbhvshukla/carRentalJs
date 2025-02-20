@@ -30,7 +30,7 @@ async function loadConversations() {
     conversations.sort((a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp));
 
     messageList.innerHTML = "";
-
+    //match for the appropriate ownerId
     for (const conversation of conversations) {
         const otherParticipant = conversation.owner.userId === userId ? conversation.user : conversation.owner;
         const lastMessage = conversation.lastMessage || "No messages yet.";
@@ -52,7 +52,7 @@ async function loadConversations() {
         messageList.appendChild(messageItem);
     }
 }
-
+//Send the chatId as param
 function redirectToChat(chatId) {
     window.location.href = `./view-umessage.html?chatId=${chatId}`;
 }

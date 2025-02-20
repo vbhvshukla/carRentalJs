@@ -31,7 +31,7 @@
                     <p><strong>Price:</strong> 
                     <span id="local-charges"></span>
                     <span id="outstation-charges"></span>
-                    (Extra charges applicable)
+                    (Extra charges applicable) <button id="info-button">ℹ️</button>
                     </p>
                     <p><strong>Description:</strong> <span id="car-description"></span></p>
                     <p><strong>Owner:</strong> <span id="owner-name"></span></p>
@@ -66,11 +66,11 @@
                         </div>
 
                         <div class="price-info">
-                            <strong>Current Price:</strong> ₹<span id="current-price"></span>
+                            <strong>Base Price:</strong> ₹<span id="current-price"></span>
                         </div>
 
                         <div class="total-price-container" id="total-price-container">
-                            <strong>Total Price:</strong> ₹<span id="total-price"></span>
+                            <strong>Current Due:</strong> ₹<span id="total-price"></span>
                         </div>
 
                         <div class="price-breakup-container" id="price-breakup-container" style="display: none;">
@@ -105,6 +105,14 @@
                             </svg>
                         </button>
 
+                    </div>
+                </div>
+
+                <div id="info-modal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h2>Price Details</h2>
+                        <div id="price-info"></div>
                     </div>
                 </div>
             </div>
